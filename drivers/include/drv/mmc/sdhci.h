@@ -264,6 +264,7 @@ struct sdhci_ops {
 #endif
 	void (*set_control_reg)(struct sdhci_host *host);
 	void (*set_clock)(struct sdhci_host *host, unsigned int div);
+	unsigned int	(*get_wp)(struct sdhci_host *host);
 };
 
 struct sdhci_host {

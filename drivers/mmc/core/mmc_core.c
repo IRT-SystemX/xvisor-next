@@ -1622,6 +1622,9 @@ struct mmc_host *mmc_alloc_host(int extra, struct vmm_device *dev)
 	INIT_LIST_HEAD(&host->io_list);
 	INIT_SPIN_LOCK(&host->io_list_lock);
 
+	INIT_MUTEX(&host->slot.lock);
+	host->slot.cd_irq = VMM_EINVALID;
+
 	INIT_COMPLETION(&host->io_avail);
 	host->io_thread = NULL;
 

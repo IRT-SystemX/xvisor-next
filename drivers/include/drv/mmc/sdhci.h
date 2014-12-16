@@ -245,6 +245,11 @@
 #define SDHCI_QUIRK_NO_SIMULT_VDD_AND_POWER	(1 << 7)
 #define SDHCI_QUIRK_NO_CARD_NO_RESET		(1 << 8)
 
+/* Controller reports inverted write-protect state */
+#define SDHCI_QUIRK_INVERTED_WRITE_PROTECT     (1 << 16)
+/* The read-only detection via SDHCI_PRESENT_STATE register is unstable */
+#define SDHCI_QUIRK_UNSTABLE_RO_DETECT         (1 << 31)
+
 /* to make gcc happy */
 struct sdhci_host;
 
@@ -285,6 +290,8 @@ struct sdhci_host {
 	u32 sdhci_caps; 
 
 	void *aligned_buffer; /* Used when DMA address has to be 8-byte aligned */
+	struct vmm_completion wait_command;
+	struct vmm_completion wait_dma;
 
 	unsigned long priv[0];
 };
@@ -320,6 +327,7 @@ static inline void sdhci_writeb(struct sdhci_host *host, u8 val, int reg)
 
 static inline u32 sdhci_readl(struct sdhci_host *host, int reg)
 {
+	arch_mb();
 	if (unlikely(host->ops.read_l)) {
 		return host->ops.read_l(host, reg);
 	} else {

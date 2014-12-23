@@ -23,7 +23,7 @@
 
 drivers-objs-$(CONFIG_MTD)+= mtd/mtd.o
 
-mtd-y += mtdcore.o mtdconcat.o mtdpart.o
+mtd-y += mtdcore.o mtdconcat.o mtdpart.o mtdchar.o mtdblock.o
 
 %/mtd.o: $(foreach obj,$(mtd-y),%/$(obj))
 	$(call merge_objs,$@,$^)

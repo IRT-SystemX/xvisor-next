@@ -111,7 +111,7 @@ static void __init imx6q_clocks_init(struct device_node *ccm_node)
 	struct device_node *np;
 	virtual_addr_t vbase = 0;
 	void __iomem *base;
-	unsigned int i, irq;
+	unsigned int i;
 	int ret;
 
 	clk[dummy] = imx_clk_fixed("dummy", 0);
@@ -477,25 +477,6 @@ static void __init imx6q_clocks_init(struct device_node *ccm_node)
 
 	/* Set initial power mode */
 	imx6q_set_lpm(WAIT_CLOCKED);
-
-	if (NULL == (np = vmm_devtree_find_compatible(NULL, NULL,
-						      "fsl,imx6q-gpt"))) {
-		vmm_printf("Failed to find GPT node\n");
-		return;
-	}
-	if (VMM_OK != vmm_devtree_regmap(np, &vbase, 0)) {
-		vmm_printf("Failed to map GPT registers\n");
-		vmm_devtree_dref_node(np);
-		return;
-	}
-	base = (void __iomem *)vbase;
-
-	if (VMM_OK != vmm_devtree_irq_get(np, &irq, 0)) {
-		vmm_printf("Failed to find GPT IRQ\n");
-		vmm_devtree_dref_node(np);
-		return;
-	}
-	vmm_devtree_dref_node(np);
 }
 CLK_OF_DECLARE(imx6q, "fsl,imx6q-ccm", imx6q_clocks_init);
 

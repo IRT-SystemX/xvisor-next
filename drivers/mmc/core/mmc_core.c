@@ -1247,20 +1247,14 @@ detect_done:
 
 static void __mmc_detect_card_change(struct mmc_host *host)
 {
-	int timeout = 1000;
-
 	if (!host) {
 		return;
 	}
 
-	if (host->card) {
-		if (__mmc_send_status(host, host->card, timeout)) {
-			__mmc_detect_card_removed(host);
-		}
+	if (__mmc_getcd(host)) {
+		__mmc_detect_card_inserted(host);
 	} else {
-		if (__mmc_getcd(host)) {
-			__mmc_detect_card_inserted(host);
-		}
+		__mmc_detect_card_removed(host);
 	}
 }
 

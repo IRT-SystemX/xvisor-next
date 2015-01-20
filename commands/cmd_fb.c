@@ -287,17 +287,13 @@ static int cmd_fb_logo(struct vmm_chardev *cdev, struct fb_info *info,
 
 	if (argc >= 1)
 		x = strtol(argv[0], NULL, 10);
-	else if (image->width < info->var.xres)
-		x = (info->var.xres - image->width) / 2;
 	else
-		x = 0;
+		x = (info->var.xres - image->width) / 2;
 
 	if (argc >= 2)
 		y = strtol(argv[1], NULL, 10);
-	else if (image->height < info->var.yres)
-		y = (info->var.yres - image->height) / 2;
 	else
-		y = 0;
+		y = (info->var.yres - image->height) / 2;
 
 	if (argc >= 3)
 		w = strtol(argv[2], NULL, 10);
@@ -326,15 +322,11 @@ static int cmd_fb_logo(struct vmm_chardev *cdev, struct fb_info *info,
 	}
 
 	if (info->var.xres <= (x + w)) {
-		vmm_cprintf(cdev, "Error: x+width should be less than %d\n",
-			    info->var.xres);
-		return VMM_EINVALID;
+		w = info->var.xres - x;
 	}
 
 	if (info->var.yres <= (y + h)) {
-		vmm_cprintf(cdev, "Error: y+height should be less than %d\n",
-			    info->var.yres);
-		return VMM_EINVALID;
+		h = info->var.yres - y;
 	}
 
 	return fb_write_image(info, image, x, y, w, h);

@@ -1,0 +1,604 @@
+% Développé par : Paul de Nazelle -- paul.denazelle@irt-systemx.fr
+% 		    Timothée Leblond -- timothee.leblond@irt-systemx.fr
+% Modified by: Jimmy Durand Wesolowski -- jimmy.durand-wesolowski@openwide.fr
+
+% \documentclass[french,slidetop,9pt]{beamer}
+\documentclass[english,slidetop,9pt,aspectratio=169]{beamer}
+% \documentclass[english,slidetop,9pt,aspectratio=1610]{beamer}
+% Utilisation du package SystemX sans option
+%\usepackage{SystemX}
+% Utilisation du package SystemX avec les options
+\usepackage[noconfidential,noreflect,myprogression]{SystemX}
+\usepackage[babel=true]{csquotes}
+\usepackage{array}
+\usepackage{multirow}
+
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Notes de précision pour les diapositives de présentation
+% \setbeameroption{show notes}
+% \setbeameroption{show notes on second screen=right} % =bottom / right / left
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Définition de la page de titre
+\date[]{Version 0.3}
+\title[]{Xvisor}
+\subtitle[]{An Open-source, lightweight, embedded hypervisor for your car}
+\author{Jimmy Durand Wesolowski}
+\institute[]{OpenWide}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Numérotation des sections : \usesectionfalse ou \usesectiontrue
+\usesectiontrue
+% \usesectionfalse
+
+
+
+\begin{document}
+\setbeamertemplate{caption}{\raggedright\insertcaption\par}
+  \begin{frame}
+    \titlepage
+  \end{frame}
+  \note{Thank you}
+
+  \begin{myframe}[0]{\myplan{}}{}{t}
+    \hfill
+    \begin{minipage}{.84\textwidth}
+      \tableofcontents[hideallsubsections]
+    \end{minipage}
+  \end{myframe}
+
+  \begin{myframe}[1]{Introduction}{Context}{c}
+    \begin{minipage}{0.4\textwidth}
+      \raggedright
+      \mbox{Jimmy Durand Wesolowski}\\
+      Openwide - French open-source software \& engineering company \\
+      \begin{figure}
+        \centering
+        \includegraphics[width=0.7\textwidth]{Open-Wide_logo_header}
+      \end{figure}
+      IRT SystemX - Technological research institute in Saclay, FRANCE
+      \begin{figure}
+        \centering
+        \includegraphics[width=0.7\textwidth]{logo_systemx}
+      \end{figure}
+    \end{minipage}
+    \begin{minipage}{0.59\textwidth}
+      \begin{figure}
+        \centering
+        \includegraphics[width=0.6\textwidth]{guests}
+      \end{figure}
+    \end{minipage}
+  \end{myframe}
+
+  \begin{myframe}[2][Virtualization]{Introduction}{Definitions}{c}
+    \begin{nbox}{Virtual machine}
+      \enquote{Efficient, isolated duplicate of a real machine} (Popek and Goldberg)
+    \end{nbox}
+    \onslide<+->{
+      \begin{nbox}{Hypervisor}
+        Software/firmware (``host'') creating and running virtual machines (``guests'')\\
+        Rely on vitualization support on the host CPU
+      \end{nbox}
+    }
+    \onslide<+->{
+      \begin{nbox}{Emulator}
+        An emulator fully duplicate a real machine\\
+        Does not rely on vitualization support on the host CPU
+      \end{nbox}
+    }
+  \end{myframe}
+  \note{The Popek and Goldberg virtualization requirements are a set of
+    conditions sufficient for a computer architecture to support system
+    virtualization efficiently. They were introduced by Gerald J. Popek
+    and Robert P. Goldberg in their 1974 article \textit{Formal Requirements for
+    Virtualizable Third Generation Architectures}.}
+
+  \begin{myframe}[0][Hypervisor classification]{Introduction}{Definitions}{c}
+    \begin{tabular}[t]{C{.15\textwidth}C{.6\textwidth}C{.15\textwidth}}
+      \visible<2->{
+        \begin{nbox}[.16\textwidth]{}
+          Better isolation\\
+          Improved reliability
+        \end{nbox}
+      }
+      \visible<4->{
+        \begin{nbox}[.16\textwidth]{}
+          \begin{center}
+            \mbox{VMware ESX/ESXi}\newline
+            Xen\newline
+            Xvisor\newline
+            %% FIXME -> grey
+            KVM\newline
+            BHyVe
+          \end{center}
+        \end{nbox}
+      }
+      &
+      \visible<1->{
+        \begin{figure}[h!]
+          \centering
+          \includegraphics[width=.45\textwidth]{Hyperviseur}
+        \end{figure}
+      }
+      &
+      \visible<2->{
+        \begin{nbox}[.16\textwidth]{}
+          Lower costs\\
+          No additional drivers
+        \end{nbox}
+      }
+      \visible<3->{
+        \begin{nbox}[.16\textwidth]{}
+          \begin{center}
+            \mbox{VMware workstation}\newline
+            VirtualBox\newline
+            KVM\newline
+            BHyVe
+          \end{center}
+        \end{nbox}
+      }
+    \end{tabular}
+    \begin{center}
+      {\footnotesize (source: http://en.wikipedia.org/wiki/Hypervisor)}
+    \end{center}
+  \end{myframe}
+  \note{BHyVe is pronounced Bee Hive.\\
+    Since Linux distributions and FreeBSD are still general-purpose operating
+    systems, with other applications competing for VM resources, KVM and bhyve
+    can also be categorized as type-2 hypervisors.}
+
+  \begin{myframe}[1]{Xvisor}{Few words and numbers}{c}
+    \begin{minipage}{0.54\textwidth}
+      A great and very well-designed project, initiated by \mbox{Anup Patel}
+      \begin{itemize}
+      \item Started in 2010, first version in October 2011 (v0.1.0)
+      \item A growing community
+      \item 13 contributors nowadays, mainly
+        \begin{itemize}
+        \item Anup Patel
+        \item Jean-Christophe Dubois
+        \item Himanshu Chauhan
+        \item Sukanto Ghosh
+        \end{itemize}
+      \item 3,615 commits on the development branch (xvisor-next on Github)
+      \item Current stable version 2.5.0
+      \end{itemize}
+    \end{minipage}
+    \begin{minipage}{0.45\textwidth}
+      \begin{figure}[h!]
+        \centering
+        \includegraphics[width=0.5\textwidth]{xvisor_mascot}
+        \caption{Xvisor Mascot}
+      \end{figure}
+    \end{minipage}
+  \end{myframe}
+
+  \begin{myframe}[2]{Xvisor}{Cool features}{c}
+    \begin{minipage}{0.54\textwidth}
+      \begin{itemize}
+      \item High performance and low memory foot print virtualization (demo is 1.3 MB)
+      \item Support ARMv5, ARMv6, ARMv7a, ARMv7a-ve, ARMv8a, x86\_64
+      \item Working under Qemu...
+      \item And already working with some well-known boards
+        \begin{itemize}
+        \item Raspberry Pi
+        \item Vexpress-a9
+        \item Sabrelite/Nitrogen6x
+        \item Cubieboard2
+        \item ...
+        \end{itemize}
+      \item Easy and readable device tree configuration (host \& guest)
+      \item Support
+        \begin{itemize}
+        \item Material emulation
+        \item Paravirtualization/VirtIO
+        \item Pass-through hardware access
+        \end{itemize}
+      \end{itemize}
+    \end{minipage}
+    \begin{minipage}{0.45\textwidth}
+      \begin{figure}[h!]
+        \centering
+        \includegraphics[width=0.5\textwidth]{xvisor_mascot}
+        \caption{Xvisor Mascot}
+      \end{figure}
+    \end{minipage}
+  \end{myframe}
+
+  \begin{myframe}[0]{Xvisor}{Cool features}{c}
+    \begin{minipage}{0.54\textwidth}
+      \begin{itemize}
+      \item Research paper written by Anup Patel, \textit{Embedded Hypervisor
+        Xvisor: A comparitive analysis} (PDP 2015)
+      \item ``Faster'' than KVM and Xen DomU
+        \begin{itemize}
+        \item +0.2\% DMIPS VS. KVM
+        \item +0.46\% DMIPS VS. Xen DomU
+        \item +1.2\% read-modify-write operations VS. KVM
+        \item +1.64\% read-modify-write operations VS. Xen DomU
+        \end{itemize}
+      \item Linux-like framework
+      \item Networking
+      \item Telnet daemon
+      \item Loadable modules
+      \item Virtual display framework
+      \item Virtual input device framework
+      \item Offline guest binary rewriting
+      \end{itemize}
+    \end{minipage}
+    \begin{minipage}{0.45\textwidth}
+      \begin{figure}[h!]
+        \centering
+        \includegraphics[width=0.5\textwidth]{xvisor_mascot}
+        \caption{Xvisor Mascot}
+      \end{figure}
+    \end{minipage}
+  \end{myframe}
+
+  \begin{myframe}[2][Porting is fairly easy...]{Xvisor}{Porting drivers on Xvisor}{c}
+    \begin{nbox}{API traduction simple example}
+      \begin{tabular}[t]{C{.4\textwidth}C{.1\textwidth}C{.4\textwidth}}
+        Linux & & Xvisor \\
+        \hline
+        wait\_for\_completion\_timeout & \multirow{7}{*}{\myarrow} & vmm\_completion\_wait\_timeout \\
+        complete & & vmm\_completion\_complete \\
+        complete\_all & & vmm\_completion\_complete\_all \\
+        completion\_done & & vmm\_completion\_done \\
+        radix\_tree\_lookup & & radix\_tree\_lookup \\
+        radix\_tree\_next\_hole & & radix\_tree\_next\_hole \\
+        radix\_tree\_insert & & radix\_tree\_insert
+      \end{tabular}
+    \end{nbox}
+  \end{myframe}
+
+  \begin{myframe}[0][...but sometime]{Xvisor}{Porting drivers on Xvisor}{c}
+    \visible<1->{
+      \begin{nbox}[.8\textwidth]{}
+        Layers not yet implemented (i.e. power management)\\
+        Simplified mechanisms (port only what is necessary)
+      \end{nbox}
+    }
+    \visible<2->{
+      \begin{nbox}[.8\textwidth]{}
+        Some work-arounds in drivers for Linux API\\
+        Often not necessary or different/wrong behavior for Xvisor\\
+        \myarrow BUGS!
+      \end{nbox}
+    }
+    \visible<2->{
+      \begin{ebox}[.8\textwidth]{Example: Xvisor and Linux MMC/SD management -
+        Similar layers, different behavior}
+        \begin{itemize}
+          \item MMC layer
+          \item SDHCI layer
+          \item i.MX6 eSDHCI driver
+          \item Hardware mechanism
+        \end{itemize}
+      \end{ebox}
+    }
+  \end{myframe}
+
+  \begin{myframe}[2]{Xvisor}{Configuration}{c}
+    \begin{nbox}{Host}
+      See
+      \begin{itemize}
+      \item arch/arm/board/generic/dts/imx6/sabrelite/one\_guest\_vexpress-a9.dts
+      \item arch/arm/board/generic/dts/imx6/sabrelite/sabrelite.dtsi
+      \item arch/arm/board/generic/dts/imx6/sabrelite/imx6q.dtsi
+      \end{itemize}
+    \end{nbox}
+    \begin{nbox}{Guest}
+      See
+      \begin{itemize}
+      \item tests/arm32/nitrogen6x/nitrogen6x-a9.dts
+      \end{itemize}
+    \end{nbox}
+  \end{myframe}
+
+  \begin{myframe}[2]{Xvisor}{Hardware driver access}{c}
+    \begin{figure}
+      \centering
+      \includegraphics[width=0.7\textwidth]{drivers-dt}
+    \end{figure}
+  \end{myframe}
+
+  \begin{myframe}[2]{Xvisor}{Memory access}{c}
+    \begin{center}
+      \begin{tabular}{
+          >{\centering\arraybackslash}m{.01\textwidth}|
+          >{\centering\arraybackslash}m{.14\textwidth}|
+          >{\centering\arraybackslash}m{.4\textwidth}|
+          >{\centering\arraybackslash}m{.1\textwidth}|
+          >{\centering\arraybackslash}m{.2\textwidth}
+        }
+        \multicolumn{2}{c}{} &
+        \multicolumn{3}{c}{Memory access protections} \\
+
+        \hline
+        \rowcolor{systemx}
+        \multicolumn{2}{c|}{Arch.} & ARM32 & ARM32ve & ARM64 \\
+
+        \hline
+        %% \multicolumn{2}{c|}{Type} &
+        &
+        \multirow{2}{*}{\multirow{2}{*}{Support}}
+        &
+        Static/Compile time instruction patching for Instruction-set
+        virtualization \newline
+        Emulated Memory Management Unit (MMU) \newline
+        Virtual TLB for guest virtual CPU(s) \newline
+        &
+        \multicolumn{2}{p{.32\textwidth}}{Hardware assisted Instruction-set
+          and MMU virtualization}
+        \\
+        &
+        &
+        Software emulated interrupt controller
+        &
+        \multicolumn{2}{p{.32\textwidth}}{Both software emulated and hardware
+          assisted controller available}
+        \\
+
+        \hline
+        \multirow{4}{*}{\rotatebox[origin=c]{90}{ARM modes}} & Xvisor &
+        SVC mode & HYP mode & Exception level 2 mode \\
+        \cline{2-5}
+
+        & Guest kernel & USR mode & SVC mode & Exception level 1 mode \\
+        \cline{2-5}
+
+        & Guest user space & USR mode & USR mode & Exception level 0 mode \\
+        %% & & Domains protect guest kernel space from guest user space & &
+      \end{tabular}
+    \end{center}
+  \end{myframe}
+  \note{The VTLB keeps track of all page table entries mapped in Shadow page table in a
+    zoned array so that we can emulate Guest TLB invalidate and Guest
+    ASID switch operations. When we get translation fault for Guest VCPU
+    we do software walk of Guest page table and map a modified page
+    table entry in Guest Shadow page table and we also update Guest
+    VCPU VTLB.}
+
+  \begin{myframe}[0][Two stage MMU]{Xvisor}{Memory access}{c}
+    \begin{figure}
+      \centering
+      \includegraphics[width=0.8\textwidth]{MMU}
+    \end{figure}
+    \begin{nbox}{ARM32 memory translations}
+      Guest Virtual Address translated (software MMU) to Intermediate Physical Address\\
+      Intermediate Physical Address translated (MMU) to Physical Address
+    \end{nbox}
+  \end{myframe}
+
+  \begin{myframe}[0]{Xvisor}{Memory access}{c}
+    \begin{nbox}{Binary rewriting}
+      Offline\\
+      Code section areas must be known (ELF)\\
+      Rewrite code to replace priviledge instruction with hypercalls\\
+      More details in Jim Huang slides \textit{Xvisor: embedded and
+        lightweight hypervisor}
+    \end{nbox}
+  \end{myframe}
+  \note{Offline compared to classic online virtualization}
+
+  \begin{myframe}[2]{Xvisor}{Infos}{c}
+    \begin{minipage}{.4\textwidth}
+      Many nice things to do:
+      \begin{itemize}
+      \item New ports
+      \item New nice features
+      \item Continue i.MX6 port
+      \item Direct Rendering Management support
+      \item Resource sharing
+      \item Real time scheduling
+      \item Graphic guest configuration tool
+      \end{itemize}
+      \begin{center}{\vfill}
+        {\large \textbf{Thank you!\\
+            Enjoy FOSDEM 2015!}}
+      \end{center}
+    \end{minipage}
+    \begin{minipage}{.55\textwidth}
+      Some links:
+      \begin{itemize}
+      \item \url{http://xhypervisor.org}
+      \item \url{https://groups.google.com/d/forum/xvisor-devel}
+      \item Xvisor Github repositories
+        \begin{itemize}
+        \item Release: \url{https://github.com/xvisor/xvisor}
+        \item Development: \url{https://github.com/avpatel/xvisor-next}
+        \end{itemize}
+      \item Anup Patel's research paper, \textit{Embedded Hypervisor Xvisor:
+        A comparitive analysis}.
+
+      \item Very interesting slides from Jim Huang
+        \begin{itemize}
+        \item \url{http://fr.slideshare.net/jserv/xvisor}
+        \item \url{http://fr.slideshare.net/jserv/embedded-hypervisor-for-arm}
+        \end{itemize}
+      \item Our repositories
+        \begin{itemize}
+        \item OpenWide: \url{https://github.com/Openwide-Ingenierie/xvisor-next}
+        \item \mbox{IRT: \url{https://github.com/IRT-SystemX/xvisor-next}}
+        \end{itemize}
+      \end{itemize}
+    \end{minipage}
+  \end{myframe}
+
+  \begin{myframe}[1]{More about}{Myself}{c}
+    Jimmy Durand Wesolowski\\
+    Computer engineer\\
+    EPITA (2009) - Embedded and real time systems
+    \begin{itemize}
+      \item Bootloader development and hacking
+      \item Microcontroller firmware development
+      \item Driver development and port
+      \item Linux kernel hacking
+      \item Low-level debugging
+      \item Security integration
+      \item ...
+    \end{itemize}
+  \end{myframe}
+
+  \begin{myframe}[2]{More about}{OpenWide}{c}
+    \begin{minipage}{0.50\textwidth}
+      \begin{itemize}
+        \item Software \& engineering company
+        \item Open-source solution provider
+        \item Open-source software support
+        \item Multiple branches, which one is embedded systems
+          \begin{itemize}
+          \item Linux kernel support
+          \item Linux HMI creation
+          \item Device driver support and solution
+          \item Image and video systems
+          \item Xvisor support
+          \end{itemize}
+        \item \url{https://github.com/IRT-SystemX/xvisor-next}
+      \end{itemize}
+    \end{minipage}
+    \begin{minipage}{0.49\textwidth}
+      \centering
+      \includegraphics[width=0.7\textwidth]{Open-Wide_logo_header}
+    \end{minipage}
+  \end{myframe}
+
+  \begin{myframe}[2]{More about}{IRT SystemX}{c}
+    \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[height=0.3\textwidth]{logo_systemx}
+      \begin{itemize}
+        \item Research institute based in Saclay, France (far south suburb of Paris)
+        \item Gathering of researchers and industrials around projects
+        \item ELA Project (\'{E}lectronique et Logiciels pour l'Automobile -
+          Electronic and Software for the Automotive)
+      \end{itemize}
+    \end{minipage}
+    \begin{minipage}{0.6\textwidth}
+      \begin{center}
+        \centering
+        \includegraphics[width=1\textwidth]{Schema_Thematiques_bleu}
+      \end{center}
+    \end{minipage}
+  \end{myframe}
+
+  \begin{myframe}[2]{More about}{Partners}{c}
+    \begin{minipage}{0.3\textwidth}
+      \begin{itemize}
+        \item The IRT itself
+        \item Renault
+        \item Peugeot PSA
+        \item Continental
+        \item Universit\'{e} Paris-Sud
+      \end{itemize}
+    \end{minipage}
+    \begin{minipage}{0.65\textwidth}
+      \begin{center}
+        \includegraphics[height=0.18\textwidth]{logo_systemx}
+        \hspace{2pt}
+        \includegraphics[height=0.18\textwidth]{Renault}
+        \vspace{2pt}
+        \begin{minipage}{0.5\textwidth}
+          \begin{center}
+            \includegraphics[height=0.15\textwidth]{PSAPeugeotCitroen_BD}
+            \vspace{2pt}
+            \includegraphics[height=0.14\textwidth]{Continental}
+          \end{center}
+        \end{minipage}
+        \hspace{2pt}
+        \begin{minipage}{0.22\textwidth}
+          \begin{center}
+            \includegraphics[width=0.8\textwidth]{Logo_PSUD_2011}
+          \end{center}
+        \end{minipage}
+        \vspace{2pt}
+        \includegraphics[height=0.16\textwidth]{Open-Wide_logo_header}
+      \end{center}
+    \end{minipage}
+  \end{myframe}
+
+  \begin{myframe}[2][The needs]{More about}{The project}{c}
+    \begin{minipage}{0.4\textwidth}
+      \begin{nbox}{Driver needs}
+        \begin{itemize}[<+->]
+        \item Car safety - Advanced Driver Assistance System (ADAS)
+        \item Multimedia system - Infotainment
+        \item Comfort
+        \end{itemize}
+      \end{nbox}
+      \begin{nbox}{Consequences:}
+        \begin{itemize}
+        \item More electronics, boards, cables
+        \item Increased component integration
+        \item More M2M communication channels
+        \item Costs rises
+        \end{itemize}
+      \end{nbox}
+    \end{minipage}
+    \begin{minipage}{0.59\textwidth}
+      \begin{center}
+        \includegraphics[width=1\textwidth]{B0107_Illustration_ELA_vFR-CS62-1024x518}
+      \end{center}
+    \end{minipage}
+  \end{myframe}
+
+  \begin{myframe}[0][How Xvisor will be used]{More about}{The project}{c}
+    \begin{minipage}{0.4\textwidth}
+      \Atext{Multiple physical boards\\
+        \myarrow Virtual machines on a single higher-end board}{1\textwidth}
+      \begin{nbox}{Case studied}
+        \begin{itemize}
+        \item Head Unit (Android)
+        \item IVI/Infotainement (Genivi)
+        \item Cluster (Real time graphics)
+        \item Cluster (Advanced graphics)
+        \end{itemize}
+      \end{nbox}
+    \end{minipage}
+    \begin{minipage}{0.59\textwidth}
+      \centering
+      \includegraphics[width=0.6\textwidth]{guests}
+    \end{minipage}
+  \end{myframe}
+
+  \begin{myframe}[0][Pros \& cons]{Introduction}{Project}{c}
+    \begin{minipage}{0.4\textwidth}
+      \begin{nbox}{Pros}
+        \begin{itemize}
+        \item Faster electronic integration
+        \item Firmware refactoring
+        \item Reduce integration costs
+        \item Increased reliability
+        \item Better monitoring
+        \end{itemize}
+      \end{nbox}
+      \begin{nbox}{Cons}
+        \begin{itemize}
+        \item Hypervisor development/integration
+        \item Porting host board drivers
+        \item Resource architecture design
+        \end{itemize}
+      \end{nbox}
+    \end{minipage}
+    \visible<1->{
+      \begin{minipage}{0.59\textwidth}
+        \centering
+        \includegraphics[width=0.6\textwidth]{guests}
+      \end{minipage}
+    }
+  \end{myframe}
+
+  \begin{myframe}[0]{Credit}{Credit}{c}
+    IRT SystemX theme and logos used with the IRT SystemX permission.\\
+    Renault, PSA Peugeot Citro\"{e}n, Continental, Universit\'{e} Paris Sud
+    and Openwide logos used with permission.\\
+    Use case schema from Matthieu Donain Daniel Jutras, used with
+    PSA Peugeot Citro\"{e}n and Continental permission.\\
+    Xvisor mascot used with Anup Patel authorization.\\
+    Thank you to Anup Patel and the Xvisor contributors, Openwide, the Research
+    Institute and the different project partners for their help and support.
+  \end{myframe}
+
+\end{document}

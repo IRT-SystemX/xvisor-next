@@ -1,0 +1,55 @@
+		Xvisor
+	Xvisor: An open-source, lightweight, embedded hypervisor for your car
+	Jimmy Durand Wesolowski
+
+
+Full version:
+Nowadays, as the Advance Driver Assistance Systems (ADAS) needs drastically
+increases, the number of electronic boards, cables, communication channels,
+and devices explodes.
+In the meantime, infotainment is one of the selling points for automotive
+industries to sell new cars, which also mean more electronics.
+Thanks to the Genivi initiative, those systems will run under Linux, whilst
+car control electronics run under Autosar (AUTomotive Open System
+ARchitecture) OSes, which are closed source binaries.
+
+Gathering multiple boards into one with hypervisors is a solution to reduce
+costs and increase functionalities. Xvisor is an open source lightweight
+hypervisor for embedded systems that fits perfectly the needs of the automative
+industry.
+
+It is a complete monolithic type-1 hypervisor with full virtualization,
+allowing unmodified guest support (useful for AUTOSAR components) and
+paravirtualization, which can help improve Linux guest performance.
+Moreover, on ARM, Xvisor shows better performances than KVM.
+It has been mainly developed by Anup Patel, and joined by
+Jean-Christophe Dubois, Himanshu Chauhan, Sukanto Ghosh and
+Pranav Sawargaonkar.
+This presentation will focus on ARM usage while introducing the concepts of
+virtualisation, paravirtualisation.
+
+Even if Xvisor is a young project, publicly visible from June 2011, as its
+sources are very close to Linux, ports remain quite fast and easy. It uses
+device tree files, both for board definition and configuration parts.
+It is in this way that we, OpenWide and the Institute for Technological
+Research SystemX, continue the work of Jean-Christophe on the i.MX6 port of
+Xvisor, for the Boundary Devices Nitrogen6x (and the Freescale SabreLite).
+
+Then will show:
+- the binary rewriting tool usage on guest binaries,
+- Xvisor running on Qemu,
+- configurable and dynamic guest creation
+- and Xvisor running on the i.MX6.
+
+
+
+Short version:
+As ADAS and infotainment require more electronics, using an hypervisor is
+a solution to gather multiple boards into one. Xvisor is an open source
+lightweight hypervisor for embedded systems that perfectly fits the needs of
+the automative industry. It is a complete monolithic type-1 hypervisor with
+full virtualization and paravirtualisation support, showing better performances
+than KVM.
+
+We, OpenWide and the Institute for Technological Research SystemX, are working
+on its port on i.MX6 boards.

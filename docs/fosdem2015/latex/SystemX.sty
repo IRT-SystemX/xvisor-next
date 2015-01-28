@@ -1,0 +1,892 @@
+% Package SystemX v2.10
+% Développé par : Paul de Nazelle -- paul.denazelle@irt-systemx.fr
+% 		    Timothée Leblond -- timothee.leblond@irt-systemx.fr
+% sans option : \usepackage{SystemX}  
+% avec option : \usepackage[r;v;b]{SystemX}						% choix de la couleur de la présentation
+%
+% Modified by: Jimmy Durand Wesolowski -- jimmy.durand-wesolowski@openwide.fr
+% Required distribution package on Gentoo (use texmfind from dev-tex/texmfind
+% to find):
+%   dev-tex/latex-beamer
+%   dev-texlive/texlive-latexextra (multirow.sty, environ.sty, trimspaces, ...)
+%   dev-texlive/texlive-pictures (pgfplots.sty)
+%   dev-texlive/texlive-fontsrecommended (tgheros.sty)
+%   dev-tex/xcolor (xcolor.sty)
+%   dev-texlive/texlive-fontutils-2014
+%   dev-texlive/texlive-fontsextra-2014
+%   media-fonts/texcm-ttf (font with manual hyphenation)
+%   tcolorbox.sty
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{SystemX}
+	%% Options «normales»
+	\def\@@formatcolor#1;#2;#3\@nil{#1,#2,#3}
+	\DeclareOption*{\edef\tempa{\noexpand\definecolor{prescolor}{RGB}{\expandafter\@@formatcolor\CurrentOption\@nil}}\tempa}
+
+	\newif\if@english \@englishfalse
+	\DeclareOption{english}{\@englishtrue}
+	\DeclareOption*{\@englishfalse}
+
+	\newif\if@noreflect \@noreflectfalse
+	\DeclareOption{noreflect}{\@noreflecttrue}
+	\DeclareOption*{\@noreflectfalse}
+	
+	\newif\if@noconfidential \@noconfidentialfalse
+	\DeclareOption{noconfidential}{\@noconfidentialtrue}
+	\DeclareOption*{\@noconfidentialfalse}
+		
+	\newif\if@myprogression \@myprogressionfalse
+	\DeclareOption{myprogression}{\@myprogressiontrue}
+	\DeclareOption*{\@myprogressionfalse}
+	
+	\newif\if@myend \@myendfalse
+	\DeclareOption{myend}{\@myendtrue}
+	\DeclareOption*{\@myendfalse}
+
+
+\ProcessOptions
+\ProcessOptions\relax
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Définition de quelques options 
+
+% Dossier dans lequel se trouve les figures
+\graphicspath{{Figures/}}
+
+% Deuxième auteur de la présentation
+\def\insertauthorA{}
+\newcommand{\authorA}[1]{\def\insertauthorA{#1}}
+
+% Définition d'une commande pour un titre optionnel
+\def\insertoptiontitle{}
+\newcommand{\optiontitle}[1]{\def\insertoptiontitle{#1}}
+
+% Définition d'une commande pour des commentaires dans le foot
+\def\insertfootcomment{}
+\newcommand{\footcomment}[1]{\def\insertfootcomment{#1}}
+
+% Utilisation de la numérotation des sections dans les titres : \usesectiontrue (défaut) ou \usesectionfalse
+\newif\ifusesection
+\usesectiontrue
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Commandes personnalisées
+\newcommand{\systemx}{\textsc{SystemX}}
+\newcommand{\bsl}{\symbol{92}\!}
+\newcommand{\acco}[1]{$$\left\{\begin{array}{ll}#1\end{array}\right.$$}
+\newcommand{\eqn}[1]{\[#1\]}
+\newcommand{\mytemize}[1]{\begin{itemize}\item #1\end{itemize}}
+\newcommand{\Atext}[2]{
+	\begin{center}
+		\tikz{\node[top color=systemx!60,bottom color=systemx!20,fill=prescolor,text width=#2,scale=1,text centered] at(0,0) {\emph{#1}} ;}
+	\end{center}
+}
+\newcommand{\myarrow}{
+	\tikz{
+		\draw[fill=systemx,color=systemx,line width=3.5pt,->,>=fast cap] (.2,0) -- (.5,0);
+		\draw[fill=systemx,color=systemx,line width=3.5pt,<-,>=triangle 90 cap reversed] (0,0) -- (0.2,0);
+	}
+}
+\newcommand{\mycheck}[1]{
+	\includegraphics[width=#1]{Base/Green_check}
+}
+\newcommand{\mycancel}[1]{
+	\includegraphics[width=#1]{Base/Cancel}
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Définition des couleurs
+\definecolor{systemx}{RGB}{0,157,223} 						% Bleu systemx
+\definecolor{prescolor}{RGB}{0,157,223} 						% Bleu de la présentation
+\definecolor{systemxDark}{RGB}{0,104,141} 					% Bleu de la présentation
+\definecolor{mongray}{RGB}{93,110,117}
+\definecolor{monred}{rgb}{0.79 0.0 0.1}
+\definecolor{monbleu}{rgb}{0.1 0.1 0.6}
+\definecolor{monbleu2}{rgb}{0.6,0.6,1}
+\definecolor{monvert}{rgb}{0.2,1,0.2}
+\definecolor{monorange}{rgb}{1,0.8,0.2}
+\definecolor{orangeSystemX}{RGB}{241,90,36}
+\setbeamercolor*{structure}{fg=black!90}
+\setbeamercolor*{palette primary}{use=structure,fg=black,bg=structure.fg!40!red}
+\setbeamercolor*{palette secondary}{use=structure,fg=black,bg=structure.fg!40!red}
+\setbeamercolor*{palette tertiary}{use=structure,fg=systemxDark,bg=systemxDark!10}
+\setbeamercolor*{palette quaternary}{fg=black!10,bg=prescolor!65}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Définition des couleurs des blocs
+\setbeamerfont*{block title}{size=\normalsize,family=\sffamily,shape=\scshape}%,series=\bfseries}	% définit la font des titres des blocks
+
+\setbeamercolor*{block title}{fg=prescolor,bg=black!5}
+\setbeamercolor*{block body}{fg=black,bg=black!5}
+
+\setbeamercolor*{block title alerted}{fg=black,bg=prescolor!80}
+\setbeamercolor*{block body alerted}{fg=black,bg=black!5}
+
+\setbeamercolor*{block title example}{fg=black!10,bg=black!80}
+\setbeamercolor*{block body example}{fg=black!10,bg=black!70}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Affichage des numéros de section dans la table des matières 						
+\setbeamertemplate{section in toc}[sections numbered]
+\setbeamertemplate{subsection in toc}[subsections numbered]
+\setbeamertemplate{subsubsection in toc}[subsubsections numbered]
+
+\defbeamertemplate*{section in toc}{}{
+	\begin{minipage}{.07\textwidth}
+		\ifnum\inserttocsectionnumber<10
+			\fontsize{20}{20} \textcolor{prescolor}{\textbf{0\inserttocsectionnumber}}
+		\else
+			\fontsize{20}{20} \textcolor{prescolor}{\textbf{\inserttocsectionnumber}}
+		\fi
+	\end{minipage}
+	\normalsize
+	\if@noreflect
+		\textsc{\bfseries \inserttocsection}
+	\else
+		\reflet{\textsc{\inserttocsection}}{}{\small}
+	\fi
+	\par
+	\vskip2pt
+}
+
+\defbeamertemplate*{subsection in toc}{}{
+	\hfill%
+	\begin{tabular}{!{\color{systemx}\vrule width 2pt}l}%
+		\begin{beamercolorbox}[wd=.94\textwidth,left]{sub_in_toc}%
+			\textcolor{mongray}{%
+				\bfseries\inserttocsubsection%
+			}%
+		\end{beamercolorbox}%
+	\end{tabular}%
+	\vskip-1pt%
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Tikz
+\RequirePackage{tikz}
+	\usetikzlibrary{arrows, shapes, shadows, calc, decorations.pathmorphing, decorations.pathreplacing, backgrounds, fit, positioning, shapes.symbols, chains, shapes.multipart,3d} 
+\tikzstyle{every picture}+=[remember picture]
+\RequirePackage{pgfplots}
+
+% Déclarations des différentes couches
+\pgfdeclarelayer{Bbackground}
+\pgfdeclarelayer{background}
+\pgfdeclarelayer{main}
+\pgfdeclarelayer{foreground}
+
+% Ordre de superposition des couches
+\pgfsetlayers{Bbackground,background,main,foreground}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Définition des symboles des listes
+\defbeamertemplate{itemize item}{systemx}{\tikz{\draw[fill=prescolor,color=orangeSystemX,rotate=45] (0,0) rectangle (.1,.1);}}
+\defbeamertemplate{itemize subitem}{systemx}{\tikz{\draw[fill=systemx,color=systemx,rotate=45] (0,0) rectangle (.07,.07);}}
+\defbeamertemplate{itemize subsubitem}{systemx}{\tikz{\draw[fill=mongray,color=mongray,rotate=45] (0,0) rectangle (.06,.06);}}
+
+\setbeamertemplate{itemize item}[systemx]					% item SystemX
+\setbeamertemplate{itemize subitem}[systemx]				% sous item SystemX
+\setbeamertemplate{itemize subsubitem}[systemx]				% sous sous item SystemX
+
+% \setbeamerfont{itemize/enumerate body}{series=\bfseries}
+% \setbeamerfont{itemize/enumerate subbody}{series=\bfseries}
+% \setbeamerfont{itemize/enumerate subsubbody}{series=\bfseries}
+% 
+% \setbeamercolor{itemize/enumerate body}{}
+% \setbeamercolor{itemize/enumerate subbody}{fg=black!60}
+% \setbeamercolor{itemize/enumerate subsubbody}{fg=black!60}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Arrêt des mini-frames
+\let\beamer@writeslidentry@miniframeson=\beamer@writeslidentry
+\def\beamer@writeslidentry@miniframesoff{%
+	\expandafter\beamer@ifempty\expandafter{\beamer@framestartpage}{}% does not happen normally
+	{
+	\clearpage\beamer@notesactions%
+	}
+}
+\newcommand*{\miniframeson}{\let\beamer@writeslidentry=\beamer@writeslidentry@miniframeson}
+\newcommand*{\miniframesoff}{\let\beamer@writeslidentry=\beamer@writeslidentry@miniframesoff}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Définition de la diapositive principale
+\setbeamersize{text margin left=1em,text margin right=1em}
+\setbeamersize{sidebar width left=0mm}
+\defbeamertemplate*{sidebar left}{theme systemx}{}
+\setbeamersize{sidebar width right=0mm}
+\defbeamertemplate*{sidebar right}{theme systemx}{}
+
+\setbeamerfont*{mytitle}{size=\huge,family=\sffamily,shape=\scshape,series=\bfseries}	% définit la font des titres de la diapositive générale
+\setbeamerfont*{mysubtitle}{size=\normalsize,family=\sffamily,shape=\scshape,series=\bfseries}	% définit la font des titres de la diapositive générale
+\setbeamerfont*{myothertitle}{size=\scriptsize,family=\sffamily,shape=\scshape,series=\bfseries}	% définit la font des titres de la diapositive générale
+
+% Définition des longueurs en fonction du format de diapositives
+\newlength{\@myXorig}
+\newlength{\@myXnames}
+\newlength{\@myYnames}
+\ifdim\beamer@paperwidth=16.00cm
+	\setlength{\@myXorig}{7.7cm}
+	\setlength{\@myXnames}{12cm}
+	\ifdim\beamer@paperheight=10.00cm
+		\setlength{\@myYnames}{3.1cm}
+	\else
+		\setlength{\@myYnames}{-5.2cm}
+	\fi
+\else
+	\setlength{\@myXorig}{6.07cm}
+	\setlength{\@myXnames}{9.7cm}
+	\setlength{\@myYnames}{-3.1cm}
+\fi
+
+
+\defbeamertemplate*{title page}{theme systemx}[1][]
+{
+	\begin{tikzpicture}[overlay]
+		\ifdim\beamer@paperwidth=16.00cm
+			\node at(\@myXorig,-.64) {\includegraphics[width=1.01\paperwidth,height=0.95\paperheight]{Base/Accueil_169_3}} ;
+		\else
+			\node at(\@myXorig,-.68) {\includegraphics[width=1.01\paperwidth,height=0.95\paperheight]{Base/Accueil_43_3}} ;
+		\fi
+		\node[minimum height=.5\paperheight] at(\@myXorig,-1.5) {
+			\begin{minipage}{.85\paperwidth}
+				\begin{flushleft}
+					\ifx\inserttitle\empty
+						% On ne fait rien
+					\else
+						{\advance\baselineskip 8pt {\usebeamerfont{mytitle}{\inserttitle}} \par}
+					\fi
+					\ifx\insertsubtitle\empty
+						% On ne fait rien
+					\else
+						{\advance\baselineskip 8pt {\usebeamerfont{mysubtitle}{\textcolor{prescolor}{\insertsubtitle}}} \par}
+					\fi
+					\ifx\insertdate\empty
+						% On ne fait rien
+					\else
+						{\advance\baselineskip 8pt {\usebeamerfont{myothertitle}{\insertdate}} \newline}
+					\fi
+					\ifx\insertinstitute\empty
+						% On ne fait rien
+					\else
+						{\advance\baselineskip 8pt {\usebeamerfont{myothertitle}{\insertinstitute}} \newline}
+					\fi
+				\end{flushleft}
+				\vfill
+				~
+			\end{minipage}
+		};
+	\end{tikzpicture}
+	\ifnum\thepage=1
+		\addtocounter{framenumber}{-1}
+	\else
+		% On ne fait rien
+	\fi
+}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Définition des autres diapositives
+% évite l'erreur de compilation avec le paquet multirow qui suit
+\RequirePackage{etex}
+\RequirePackage{multirow}
+
+% Définition des hauts de page	
+\defbeamertemplate*{headline}{theme systemx}{
+	\ifnum\thepage=1 
+		%
+	\else
+		\if@myprogression
+			\hspace{0.02\textwidth}
+			\begin{minipage}{0.96\textwidth}
+				\beamer@compresstrue
+				\textcolor{black!95}{\insertnavigation{\textwidth}}
+			\end{minipage}
+			\hfill
+		\fi
+	\fi
+}
+
+% Définition des pieds de page
+% font des pieds de page
+\setbeamerfont*{myfootfont}{family=\sffamily,size=\Tiny}
+\setbeamercolor*{foot_diapo}{fg=black, bg=prescolor}
+								
+\defbeamertemplate*{footline}{theme systemx}
+{
+	\begin{beamercolorbox}[wd=\paperwidth,ht=4mm,right]{foot_diapo}
+		\usebeamerfont{myfootfont}
+		\begin{minipage}{0.4\textwidth}
+			\vspace{0.5pt}
+			\if@noconfidential
+				~%
+			\else
+				\usebeamerfont{myothertitle}{\textcolor{black!5}{\textsc{\myconfidential}}}
+			\fi
+			\vspace{.5pt}
+		\end{minipage}
+		\hfill
+		\ifnum\thepage=1 
+			\begin{minipage}{.4\paperwidth}
+				\begin{flushright}
+				\textcolor{black!5}{
+					\usebeamerfont{myothertitle}{
+					\textbf{
+						\insertauthor
+						\ifx\insertauthorA\empty
+							%
+						\else
+							~-~\insertauthorA
+						\fi}
+						}
+				}
+				\end{flushright}
+			\end{minipage}
+		\else
+			\begin{minipage}{0.4\textwidth}
+				\textcolor{black!5}{
+					\usebeamerfont{myothertitle}{
+						\textbf{
+							\hfill
+							\tiny \insertfootcomment{}
+							\hfill
+							\insertframenumber{}
+						}
+					}
+				}
+			\end{minipage}
+		\fi
+		\hspace{.8cm}
+		\vskip3.5pt
+	\end{beamercolorbox}
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Réglages de la barre de navigation
+\def\slideentry#1#2#3#4#5#6{%
+  %section number, subsection number, slide number, first/last frame, page number, part number%
+	\ifnum#6=\c@part%
+		\ifnum#2>0%
+			\ifnum#3>0%
+				\ifbeamer@compress%
+					\advance\beamer@xpos by1\relax%
+				\else%
+					\beamer@xpos=#3\relax%
+					\beamer@ypos=#2\relax%
+				\fi%
+				\hbox to 0pt{%
+					\beamer@tempdim=-\beamer@vboxoffset%
+					\advance\beamer@tempdim by-\beamer@boxsize%
+					\multiply\beamer@tempdim by\beamer@ypos%
+					\advance\beamer@tempdim by -.05cm%
+					\raise\beamer@tempdim\hbox to 0pt{%
+						\beamer@tempdim=\beamer@boxsize%
+						\multiply\beamer@tempdim by\beamer@xpos%
+						\advance\beamer@tempdim by -\beamer@boxsize%
+						\advance\beamer@tempdim by 1pt%
+						\kern\beamer@tempdim%
+						\global\beamer@section@min@dim\beamer@tempdim%
+						\hbox to 0pt{%
+							\beamer@link(#4){%
+								\usebeamerfont{theme systemx}
+								\ifnum\c@section<#1%
+									\usebeamertemplate{mini frame in other section}%
+								\else%
+									\ifnum\c@section=#1%
+										\ifnum\c@subsection>#2%
+											\color{systemxDark}%
+											\usebeamertemplate{mini frame}%
+										\else%
+											\ifnum\c@subsection=#2%
+												\ifnum\c@subsectionslide>#3%
+													\color{systemxDark}%
+													\usebeamertemplate{mini frame}%
+												\else%
+													\ifnum\c@subsectionslide=#3%
+														\color{black}%
+														\usebeamertemplate{mini frame}%
+													\else%
+														\color{mongray!80}%
+														\usebeamertemplate{mini frame}%
+													\fi%
+												\fi%
+											\else%
+												\usebeamertemplate{mini frame in other section}%
+											\fi%
+										\fi%
+									\else%
+										\color{systemxDark}%
+										\usebeamertemplate{mini frame}%
+									\fi%
+								\fi%
+							}%
+						}%
+					}\hskip-10cm plus 1fil%
+				}%
+			\fi%
+		\fi%
+	\else%
+		\fakeslideentry{#1}{#2}{#3}{#4}{#5}{#6}%
+	\fi%
+	\ignorespaces%
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Définition des titres des diapositives
+% numéro de section - titre de section
+% numéro de section.numéro de sous-section - titre de sous-section)
+\setbeamerfont*{mytitlefont}{size=\normalsize,family=\sffamily,shape=\scshape, series=\bfseries}
+\setbeamerfont*{mysubtitlefont}{size=\small,family=\sffamily,shape=\scshape, series=\bfseries}
+\setbeamercolor*{titre_diapositive}{fg=black, bg=prescolor}
+\setbeamercolor*{soustitre_diapositive}{fg=black, bg=}
+
+% Définition d'un booléen pour savoir si on est sur un slide de plan de la présentation
+\newif\ifnoplan
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Définition des diapositives
+\RequirePackage[]{tcolorbox}
+\defbeamertemplate*{frametitle}{theme systemx}
+{ 
+	\if@myprogression
+		\vspace{0.3cm}
+	\else
+		%
+	\fi
+	\ifx\insertframesubtitle\empty
+		\nointerlineskip
+		\begin{beamercolorbox}[ht=8mm, wd=\paperwidth,leftskip=4pt]{logo_diapositive}
+			\begin{minipage}{.18\paperwidth}
+				\includegraphics[height=12mm]{Base/SystemX}
+			\end{minipage}
+			\hfill
+			\begin{minipage}{.75\paperwidth}
+				\vspace{-0.53cm}
+				\hfill
+				\begin{tcolorbox}[flushright upper,equal height group = A,size=title,colback=systemx,colframe=white,colbacktitle = systemx,arc=.25mm,fonttitle=\scshape,width =\textwidth]
+									\scshape\textbf{
+									\ifusesection
+										\ifnoplan
+											\textcolor{black!5}{\insertframetitle{}}
+										\else
+											\ifnum\thesection=0
+												\textcolor{black!5}{\insertframetitle{}}
+											\else
+												\textcolor{black!5}{\thesection~-~\insertframetitle{}}
+											\fi
+										\fi
+									\else 
+										\textcolor{black!5}{\insertframetitle{}}
+									\fi}
+				\end{tcolorbox}
+			\end{minipage}
+			\hspace{5pt}
+		\end{beamercolorbox}
+		\vskip-1pt
+	\else
+		\nointerlineskip
+		\begin{beamercolorbox}[ht=8mm, wd=\paperwidth,leftskip=4pt]{logo_diapositive}
+			\begin{minipage}{.18\paperwidth}
+				\includegraphics[height=12mm]{Base/SystemX}
+			\end{minipage}
+			\hfill
+			\begin{minipage}{.75\paperwidth}
+				\vspace{.39cm}
+				\begin{tcolorbox}[flushright upper,equal height group = A,size=title,colback=systemx,colframe=white,colbacktitle = systemx,arc=.25mm,fonttitle=\scshape,width =\textwidth]
+									\scshape\textbf{
+									\ifusesection
+										\ifnoplan
+											\textcolor{black!5}{\insertframetitle{}}
+										\else
+											\ifnum\thesection=0
+												\textcolor{black!5}{\insertframetitle{}}
+											\else
+												\ifnum\thesubsection=0
+													\textcolor{black!5}{\thesection~-~\insertframetitle{}}
+												\else
+													\textcolor{black!5}{\thesection.\thesubsection~-~\insertframetitle{}}
+												\fi
+											\fi
+										\fi
+									\else 
+										\textcolor{black!5}{\insertframetitle{}}
+									\fi}
+				\end{tcolorbox}
+				\begin{tcolorbox}[flushright upper,equal height group = A,size=title,colback=white,colframe=white,colbacktitle = systemx,arc=1mm,fonttitle=\scshape,width =\textwidth,overlay]
+					\vspace{-.3cm}
+									\usebeamerfont{mysubtitlefont}
+									\textcolor{systemxDark}{\insertframesubtitle{}}
+				\end{tcolorbox}
+			\end{minipage}
+			\hspace{5pt}
+% 			\vspace{-2cm}
+		\end{beamercolorbox}
+		\vspace{-.3cm}
+	\fi
+	\ifx\insertoptiontitle\empty
+		% On ne fait rien
+	\else
+		\begin{beamercolorbox}[wd=\paperwidth,ht=3mm,dp=1ex,left,leftskip=4pt]{soustitre_diapositive}
+			\usebeamerfont{mysubtitlefont}
+			\insertoptiontitle
+		\end{beamercolorbox}
+	\fi
+	\vskip-4pt
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Définition des pages de notes
+\setbeamerfont*{note title}{size=\scriptsize,shape=\itshape, series=\bfseries}
+\setbeamerfont*{note body}{size=\footnotesize}
+\defbeamertemplate*{note page}{theme systemx}
+{%
+	{%
+		\usebeamerfont{note title}\usebeamercolor[fg]{note title}%
+		\ifbeamercolorempty[bg]{note title}{}{%
+			\insertvrule{.25\paperheight}{note title.bg}%
+			\vskip-.25\paperheight%
+			\nointerlineskip%
+		}%
+		\ifdim\beamer@paperwidth=16.00cm
+			\vbox{
+				\hfill\insertslideintonotes{0.25}\hskip-4.2\Gm@rmargin\hskip0pt%
+				\vskip-0.25\paperheight%
+				\nointerlineskip
+				\begin{pgfpicture}{0cm}{0cm}{0cm}{0cm}
+					\begin{pgflowlevelscope}{\pgftransformrotate{90}}
+						{\pgftransformshift{\pgfpoint{-2cm}{0.2cm}}%
+						% \pgftext[base,left]{\usebeamerfont{note date}\usebeamercolor[fg]{note date}\the\year-\ifnum\month<10\relax0\fi\the\month-\ifnum\day<10\relax0\fi\the\day}}
+						\pgftext[base,left]{\insertshortdate}}
+					\end{pgflowlevelscope}
+				\end{pgfpicture}
+			}
+		\else
+			\vbox{
+				\hfill\insertslideintonotes{0.25}\hskip-\Gm@rmargin\hskip0pt%
+				\vskip-0.25\paperheight%
+				\nointerlineskip
+				\begin{pgfpicture}{0cm}{0cm}{0cm}{0cm}
+					\begin{pgflowlevelscope}{\pgftransformrotate{90}}
+						{\pgftransformshift{\pgfpoint{-2cm}{0.2cm}}%
+						% \pgftext[base,left]{\usebeamerfont{note date}\usebeamercolor[fg]{note date}\the\year-\ifnum\month<10\relax0\fi\the\month-\ifnum\day<10\relax0\fi\the\day}}
+						\pgftext[base,left]{\insertshortdate}}
+					\end{pgflowlevelscope}
+				\end{pgfpicture}
+			}
+		\fi
+		\nointerlineskip
+		\vbox to .25\paperheight{
+			\vskip1em
+			\ifdim\beamer@paperwidth=16.00cm
+				\hbox{\begin{minipage}[t]{10.8cm}\usebeamerfont{note title}\small\inserttitle\end{minipage}}
+			\else
+				\hbox{\begin{minipage}[t]{8.4cm}\usebeamerfont{note title}\small\inserttitle\end{minipage}}
+			\fi
+			\ifx\insertsection\empty
+				\setbox\beamer@tempbox=\hbox{\insertframetitle}%
+				\hbox{\ifdim\wd\beamer@tempbox>1pt{\hskip4pt\raise3pt\hbox{\vrule
+					width0.4pt height7pt\vrule width 9pt
+					height0.4pt}}\hskip1pt\hbox{\begin{minipage}[t]{7.5cm}\def\breakhere{}\insertframetitle\end{minipage}}\fi%
+				}%
+			\else
+				\setbox\beamer@tempbox=\hbox{\insertsection}%
+				\hbox{\ifdim\wd\beamer@tempbox>1pt{\hskip4pt\raise3pt\hbox{\vrule
+					width0.4pt height7pt\vrule width 9pt
+					height0.4pt}}\hskip1pt\hbox{\begin{minipage}[t]{7.5cm}\def\breakhere{}\insertsection\end{minipage}}\fi%
+				}%
+			\fi
+			\setbox\beamer@tempbox=\hbox{\insertframesubtitle}%
+				\hbox{\ifdim\wd\beamer@tempbox>1pt{\hskip17.4pt\raise3pt\hbox{\vrule
+				width0.4pt height7pt\vrule width 9pt
+				height0.4pt}}\hskip1pt\hbox{\insertframesubtitle}\fi%
+			}%
+			\ifx\insertoptiontitle\empty
+				% on ne fait rien
+			\else
+				\setbox\beamer@tempbox=\hbox{\insertframesubtitle}%
+				\hbox{\ifdim\wd\beamer@tempbox>1pt{\hskip30.8pt\raise3pt\hbox{\vrule
+					width0.4pt height7pt\vrule width 9pt
+					height0.4pt}}\hskip1pt\hbox{\insertoptiontitle}\fi%
+				}%
+			\fi
+			\vfil
+		}%
+	}%
+	\ifbeamercolorempty[bg]{note page}{}{%
+		\nointerlineskip%
+		\insertvrule{.75\paperheight}{note page.bg}%
+		\vskip-.75\paperheight%
+	}%
+	\vskip.25em
+	\nointerlineskip
+	\begin{minipage}[t]{.85\paperwidth}
+		\usebeamerfont{note body}
+		\insertnote
+	\end{minipage}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Packages
+%%\RequirePackage[T1]{fontenc} 
+\RequirePackage[utf8]{inputenc}
+\RequirePackage[scale=.9]{tgheros}
+	\renewcommand*\familydefault{\sfdefault}
+\RequirePackage{bold-extra}
+% \RequirePackage{sourcesanspro}
+\if@english
+	\RequirePackage[english]{babel}
+\else
+	\RequirePackage[french]{babel}
+\fi
+\RequirePackage{amsmath}
+\RequirePackage{psfrag}
+\RequirePackage[labelformat=simple]{subfig}
+	\renewcommand{\thesubfigure}{\relax} 
+\RequirePackage{booktabs}
+\RequirePackage{graphicx}
+\RequirePackage{xcolor,colortbl}
+\RequirePackage{array}
+\RequirePackage{animate}
+\RequirePackage{xargs}												% Arguments optionnels pour myframe
+\RequirePackage[absolute,overlay]{textpos}									% option pour montrer la boite :,showboxes
+	\textblockorigin{10mm}{10mm}										% origine des positions
+\RequirePackage{pgfpages}
+\RequirePackage{multimedia}
+\RequirePackage[activate=pageopen,transparent,3Dtoolbar,3Dmenu,3Dlights=CAD,3Drender=SolidOutline]{media9}		% insertion de flux (remplace movie15)
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Notes de bas de page
+\renewcommand{\footnoterule}{} 							% supprime le trait au dessus
+\renewcommand{\thefootnote}{\alph{footnote}} 					% numérotation par des lettres
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Définition des section des diapositives
+\newenvironmentx{myframe}[5][1=0,2=]
+{
+	\ifnum#1=1
+		\section{#3}
+		\ifx#4\empty
+			% on ne fait rien
+		\else
+			\subsection{#4}
+		\fi
+	\fi
+	\ifnum#1=2
+		\subsection{#4}
+	\fi
+	\optiontitle{#2}
+	\begin{frame}[#5]
+		\frametitle{#3}
+		\framesubtitle{#4}
+}
+{
+	\end{frame}
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Définition de boites
+\setbeamertemplate{blocks}[rounded][shadow=true]
+\newenvironmentx{nbox}[2][1=.8\textwidth]
+{
+	\begin{center}
+		\begin{minipage}{#1}
+			\begin{block}{#2}
+			}
+			{
+			\end{block}
+		\end{minipage}
+	\end{center}
+}
+
+\newenvironmentx{ebox}[2][1=.8\textwidth]
+{
+	\begin{center}
+		\begin{minipage}{#1}
+			\begin{exampleblock}{#2}
+				\begin{center}
+				}
+				{
+				\end{center}
+			\end{exampleblock}
+		\end{minipage}
+	\end{center}
+}
+
+\newenvironmentx{abox}[2][1=.8\textwidth]
+{
+	\begin{center}
+		\begin{minipage}{#1}
+			\begin{alertblock}{#2}
+				\begin{center}
+				}
+				{
+				\end{center}
+			\end{alertblock}
+		\end{minipage}
+	\end{center}
+}
+
+\newenvironmentx{sxbox}[2][1=.8\textwidth]
+{
+	\begin{center}
+		\begin{tikzpicture}
+			\tikzstyle{BSX} = [color=systemx,dash pattern=on 1pt off 2pt on 4pt off 2pt,line width=.5pt]
+			\node at(0,0) (fmnode) \bgroup
+				\begin{minipage}{#1}
+% 					\textcolor{systemx}{\textsc{\textbf{#2}}} \par
+					\textcolor{systemx}{\textsc{#2}} \par
+					\vskip2pt
+					\begin{center}
+						}
+						{
+					\end{center}
+					\vspace{2pt}
+				\end{minipage}
+			\egroup;
+			\draw[BSX] (fmnode.north west) rectangle (fmnode.south east) ;
+			\draw[BSX,color=black!40,opacity=.25] ($(fmnode.north west)+(.7pt,-.7pt)$) rectangle ($(fmnode.south east)+(.7pt,-.7pt)$) ;
+		\end{tikzpicture}
+	\end{center}
+	\vspace{-9pt}
+}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Création des barres d'avancement pour utilisation dans les slides
+\newcommandx{\myprogressbar}[2][1=]{
+	\tikz[#1]{
+		\draw[line width=.5pt,color=systemx] (0,0) rectangle (3,.15);%
+		\draw[line width=.5pt,color=systemx,fill=systemx] (0,0) rectangle (#2/100*3,.15);%
+		\node[overlay] at(#2/100*3,0) (curs) {\textcolor{systemxDark}{$\blacktriangle$}};
+		\node[overlay,below=-4pt of curs] {\scriptsize #2\%};
+	}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Définition de la mention confidentielle
+\if@english
+	\def\myconfidential{Confidential}
+\else
+	\def\myconfidential{Confidentiel}
+\fi
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Définition du titre de la page du plan de la présentation
+\if@english
+	\def\myplan{Outline of the presentation}
+\else
+	\def\myplan{Plan de la présentation}
+\fi
+ 
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Définition des diapositives de chaque nouvelle section
+\newcommand{\reflet}[3]% affiche un texte avec un reflet : #1 = texte, #2 = couleur (e.g. : \reflet{1}{black!80}), #3 = taille du texte (par défaut \Large)
+{
+	\begin{minipage}{.84\textwidth}
+		\vfill
+		\begin{tikzpicture}[text=#2,auto] 
+			\node[text width=1.\textwidth] at(0,0) (titre){\Large #3\bfseries #1};
+			\node[below = -0.2cm of titre,anchor=south,yscale=-1,scope fading=south,opacity=0.35,text width=1.\textwidth]{\Large #3\bfseries #1};
+		\end{tikzpicture}
+		\vfill
+	\end{minipage}
+}
+
+\AtBeginSection
+{
+	\ifusesection
+		\noplantrue
+		\begin{frame}[c]
+			\if@english
+				\frametitle{Outline}
+			\else
+				\frametitle{Sommaire}
+			\fi
+			\begin{minipage}{.12\textwidth}
+				\vfill
+				\ifnum\thesection<10
+					\fontsize{40}{40} \textcolor{prescolor}{\textbf{0\thesection}}
+				\else
+					\fontsize{40}{40} \textcolor{prescolor}{\textbf{\thesection}}
+				\fi
+				\vfill
+			\end{minipage}
+			\begin{minipage}{.87\textwidth}
+				\normalsize
+				\if@noreflect
+					\textsc{\Huge\bfseries \insertsection}
+				\else
+					\reflet{\textsc{\insertsection}}{}{\huge}
+				\fi
+			\end{minipage}
+			\par
+			\vspace{.4cm}
+			\Huge{\tableofcontents[currentsection, sectionstyle=hide/hide, currentsubsection, subsectionstyle=show/show/hide]}
+		\end{frame}
+		\noplanfalse
+	\else
+		% On n'affiche rien
+	\fi
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Affichage de la diapositive de titre en fin de présentation avec l'option ``myend''
+\if@myend
+	\AtEndDocument
+	{
+		\setbeamertemplate{headline}{}
+		\setbeamertemplate{footline}{
+		\begin{beamercolorbox}[wd=\paperwidth,ht=4mm,right]{foot_diapo}
+		\usebeamerfont{myfootfont}
+		\begin{minipage}{0.4\textwidth}
+			\vspace{0.5pt}
+			\if@noconfidential
+				~%
+			\else
+				\usebeamerfont{myothertitle}{\textcolor{black!5}{\textsc{\myconfidential}}}
+			\fi
+			\vspace{.5pt}
+		\end{minipage}
+		\hfill
+		\begin{minipage}{.4\paperwidth}
+				\begin{flushright}
+				\textcolor{black!5}{
+					\usebeamerfont{myothertitle}{
+					\textbf{
+						\insertauthor
+						\ifx\insertauthorA\empty
+							%
+						\else
+							~-~\insertauthorA
+						\fi}
+						}
+					}
+				\end{flushright}
+			\end{minipage}
+		\hspace{.8cm}
+		\vskip3.5pt
+		\end{beamercolorbox}}
+
+		\miniframesoff
+		\begin{frame}
+			\titlepage
+		\end{frame}
+		\setbeamertemplate{footline}{\begin{beamercolorbox}[wd=\paperwidth,ht=5.5mm,right]{foot_diapo}
+		~
+		\end{beamercolorbox}} 
+% 		\setcounter{countannexe}{1}
+	}
+\else
+	% On n'affiche rien
+\fi
+
+
+

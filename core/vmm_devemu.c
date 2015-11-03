@@ -679,6 +679,65 @@ int vmm_devemu_register_emulator(struct vmm_emulator *emu)
 	return VMM_OK;
 }
 
+/* Simple emulator read/write[8,16,32] functions */
+int vmm_devemu_simple_read8(struct vmm_emudev *edev,
+			    physical_addr_t offset,
+			    u8 *dst)
+{
+	int rc;
+	u32 regval = 0x0;
+
+	rc = edev->emu->read_simple(edev->priv, offset, &regval);
+	if (!rc) {
+		*dst = regval & 0xFF;
+	}
+
+	return rc;
+}
+
+int vmm_devemu_simple_read16(struct vmm_emudev *edev,
+			     physical_addr_t offset,
+			     u16 *dst)
+{
+	int rc;
+	u32 regval = 0x0;
+
+	rc = edev->emu->read_simple(edev->priv, offset, &regval);
+	if (!rc) {
+		*dst = regval & 0xFFFF;
+	}
+
+	return rc;
+}
+
+int vmm_devemu_simple_read32(struct vmm_emudev *edev,
+			     physical_addr_t offset,
+			     u32 *dst)
+{
+	return edev->emu->read_simple(edev->priv, offset, dst);
+}
+
+int vmm_devemu_simple_write8(struct vmm_emudev *edev,
+			     physical_addr_t offset,
+			     u8 src)
+{
+	return edev->emu->write_simple(edev->priv, offset, 0xFFFFFF00, src);
+}
+
+int vmm_devemu_simple_write16(struct vmm_emudev *edev,
+			      physical_addr_t offset,
+			      u16 src)
+{
+	return edev->emu->write_simple(edev->priv, offset, 0xFFFF0000, src);
+}
+
+int vmm_devemu_simple_write32(struct vmm_emudev *edev,
+			      physical_addr_t offset,
+			      u32 src)
+{
+	return edev->emu->write_simple(edev->priv, offset, 0x00000000, src);
+}
+
 int vmm_devemu_unregister_emulator(struct vmm_emulator *emu)
 {
 	bool found;

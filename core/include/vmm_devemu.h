@@ -39,41 +39,102 @@ enum vmm_devemu_endianness {
 	VMM_DEVEMU_MAX_ENDIAN=4,
 };
 
+typedef int (*fn_probe) (struct vmm_guest *guest,
+			 struct vmm_emudev *edev,
+			 const struct vmm_devtree_nodeid *nodeid);
+
+typedef int (*fn_remove) (struct vmm_emudev *edev);
+typedef int (*fn_reset) (struct vmm_emudev *edev);
+typedef	int (*fn_read) (void *arg,				\
+			physical_addr_t offset,			\
+			u32 *dst);
+typedef	int (*fn_write) (void *arg,				\
+			 physical_addr_t offset,		\
+			 u32 regmask,				\
+			 u32 regval);
+
+#define FN_READ(X)						\
+	typedef	int (*fn_read ## X) (struct vmm_emudev *edev,	\
+				     physical_addr_t offset,	\
+				     u ## X *dst)
+#define FN_WRITE(X)						\
+	typedef	int (*fn_write ## X) (struct vmm_emudev *edev,	\
+				      physical_addr_t offset,	\
+				      u ## X src)
+
+FN_READ(8);
+FN_WRITE(8);
+FN_READ(16);
+FN_WRITE(16);
+FN_READ(32);
+FN_WRITE(32);
+FN_READ(64);
+FN_WRITE(64);
+
+
 struct vmm_emulator {
 	struct dlist head;
 	char name[VMM_FIELD_NAME_SIZE];
 	const struct vmm_devtree_nodeid *match_table;
 	enum vmm_devemu_endianness endian;
-	int (*probe) (struct vmm_guest *guest,
-		      struct vmm_emudev *edev,
-		      const struct vmm_devtree_nodeid *nodeid);
-	int (*remove) (struct vmm_emudev *edev);
-	int (*reset) (struct vmm_emudev *edev);
-	int (*read8) (struct vmm_emudev *edev,
-		      physical_addr_t offset,
-		      u8 *dst);
-	int (*write8) (struct vmm_emudev *edev,
-		       physical_addr_t offset,
-		       u8 src);
-	int (*read16) (struct vmm_emudev *edev,
-		       physical_addr_t offset,
-		       u16 *dst);
-	int (*write16) (struct vmm_emudev *edev,
-		        physical_addr_t offset,
-		        u16 src);
-	int (*read32) (struct vmm_emudev *edev,
-		       physical_addr_t offset,
-		       u32 *dst);
-	int (*write32) (struct vmm_emudev *edev,
-		        physical_addr_t offset,
-		        u32 src);
-	int (*read64) (struct vmm_emudev *edev,
-		       physical_addr_t offset,
-		       u64 *dst);
-	int (*write64) (struct vmm_emudev *edev,
-		        physical_addr_t offset,
-		        u64 src);
+	fn_probe probe;
+	fn_remove remove;
+	fn_reset reset;
+	fn_read8 read8;
+	fn_write8 write8;
+	fn_read16 read16;
+	fn_write16 write16;
+	fn_read32 read32;
+	fn_write32 write32;
+	union {
+		struct {
+			fn_read64 read64;
+			fn_write64 write64;
+		};
+		struct {
+			fn_read read_simple;
+			fn_write write_simple;
+		};
+	};
 };
+
+int vmm_devemu_simple_read8(struct vmm_emudev *edev,
+			    physical_addr_t offset,
+			    u8 *dst);
+int vmm_devemu_simple_read16(struct vmm_emudev *edev,
+			     physical_addr_t offset,
+			     u16 *dst);
+int vmm_devemu_simple_read32(struct vmm_emudev *edev,
+			     physical_addr_t offset,
+			     u32 *dst);
+int vmm_devemu_simple_write8(struct vmm_emudev *edev,
+			     physical_addr_t offset,
+			     u8 src);
+int vmm_devemu_simple_write16(struct vmm_emudev *edev,
+			      physical_addr_t offset,
+			      u16 src);
+int vmm_devemu_simple_write32(struct vmm_emudev *edev,
+			      physical_addr_t offset,
+			      u32 src);
+
+#define VMM_DECLARE_EMULATOR_SIMPLE(NAME, MATCH, ENDIAN, PROBE, REMOVE,	\
+				    RESET, READ, WRITE)			\
+	static struct vmm_emulator NAME ## _emulator = {		\
+		.name = #NAME,						\
+		.match_table = MATCH,					\
+		.endian = VMM_DEVEMU_LITTLE_ENDIAN,			\
+		.probe = PROBE,						\
+		.read8 = vmm_devemu_simple_read8,			\
+		.write8 = vmm_devemu_simple_write8,			\
+		.read16 = vmm_devemu_simple_read16,			\
+		.write16 = vmm_devemu_simple_write16,			\
+		.read32 = vmm_devemu_simple_read32,			\
+		.write32 = vmm_devemu_simple_write32,			\
+		.reset = RESET,						\
+		.remove = REMOVE,					\
+		.read_simple = READ,					\
+		.write_simple = WRITE,					\
+	};
 
 struct vmm_emudev {
 	vmm_spinlock_t lock;

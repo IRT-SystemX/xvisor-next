@@ -197,7 +197,7 @@ int arm_board_timer_init(u32 usecs)
 {
 	arm_board_pic_unmask(IRQ_IMX_TIMER0);
 
-	return imx_gpt_init(usecs, IMX_TIMER0, IRQ_IMX_TIMER0);
+	return imx_gpt_init(usecs, IMX_TIMER0, IRQ_IMX_TIMER0, 0);
 }
 
 #define	IMX_UART_BASE		IMX_UART1

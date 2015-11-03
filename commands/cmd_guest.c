@@ -303,9 +303,9 @@ static int cmd_guest_region(struct vmm_chardev *cdev, const char *name,
 		return VMM_EFAIL;
 	}
 	vmm_cprintf(cdev, "Guest physical address 0x%08x:\n", gphys_addr);
-	if (reg->aspace && reg->aspace->node) {
-		vmm_cprintf(cdev, "  Address space: %s\n",
-			    reg->aspace->node->name);
+	if (reg->node && reg->node->name) {
+		vmm_cprintf(cdev, "  Address space:      %s\n",
+			    reg->node->name);
 	}
 	vmm_cprintf(cdev, "  Guest base address: 0x%08x\n", reg->gphys_addr);
 	vmm_cprintf(cdev, "  Physical address:   0x%08x\n", reg->hphys_addr);

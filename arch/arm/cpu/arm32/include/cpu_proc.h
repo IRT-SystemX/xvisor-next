@@ -39,4 +39,15 @@ void proc_mmu_switch(u32 ttbr, u32 contexidr);
  */
 u32 proc_setup(void);
 
+#define CPUID_ID	0
+#define read_cpuid(reg)							\
+	({								\
+		unsigned int __val;					\
+		asm("mrc	p15, 0, %0, c0, c0, " stringify(reg)	\
+		    : "=r" (__val)					\
+		    :							\
+		    : "cc");						\
+		__val;							\
+	})
+
 #endif /* __CPU_PROC_H__ */

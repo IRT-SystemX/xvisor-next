@@ -34,9 +34,13 @@
 #include <vmm_host_io.h>
 #include <vmm_host_irq.h>
 #include <vmm_host_aspace.h>
+#include <vmm_stdio.h>
 #include <arch_barrier.h>
 
 #include <smp_ops.h>
+#include <smp_scu.h>
+
+#include <asm/io.h>
 
 #define SCU_PM_NORMAL	0
 #define SCU_PM_EINVAL	1
@@ -49,16 +53,20 @@
 #define SCU_INVALIDATE		0x0c
 #define SCU_FPGA_REVISION	0x10
 
+#define SCU_STANDBY_ENABLE	(1 << 5)
+
+static void __iomem *scu_base = NULL;
+
 #ifdef CONFIG_SMP
 /*
  * Get the number of CPU cores from the SCU configuration
  */
-static u32 scu_get_core_count(void *scu_base)
+u32 scu_get_core_count(void)
 {
 	return (vmm_readl(scu_base + SCU_CONFIG) & 0x03) + 1;
 }
 
-static bool scu_cpu_core_is_smp(void *scu_base, u32 cpu)
+bool scu_cpu_core_is_smp(u32 cpu)
 {
 	return (vmm_readl(scu_base + SCU_CONFIG) >> (4 + cpu)) & 0x01;
 }
@@ -66,7 +74,7 @@ static bool scu_cpu_core_is_smp(void *scu_base, u32 cpu)
 /*
  * Enable the SCU
  */
-static void scu_enable(void *scu_base)
+void scu_enable(void)
 {
 	u32 scu_ctrl;
 
@@ -111,7 +119,7 @@ static void scu_enable(void *scu_base)
  * has the side effect of disabling coherency, caches must have been
  * flushed.  Interrupts must also have been disabled.
  */
-int scu_power_mode(void *scu_base, u32 mode)
+int scu_power_mode(u32 mode)
 {
 	u32 val, cpu;
 
@@ -130,7 +138,6 @@ int scu_power_mode(void *scu_base, u32 mode)
 
 #if defined(CONFIG_ARM_SMP_OPS) && defined(CONFIG_ARM_GIC)
 
-static virtual_addr_t scu_base;
 static physical_addr_t clear_addr[CONFIG_CPU_COUNT];
 static physical_addr_t release_addr[CONFIG_CPU_COUNT];
 
@@ -140,23 +147,51 @@ static struct vmm_devtree_nodeid scu_matches[] = {
 	{ /* end of list */ },
 };
 
+int __init scu_init(struct vmm_devtree_node *np)
+{
+	int rc;
+
+	if (scu_base) {
+		return VMM_OK;
+	}
+
+	if (NULL == np) {
+		np = vmm_devtree_find_matching(NULL, scu_matches);
+		if (!np) {
+			vmm_lerror("Failed to find SCU node\n");
+			return VMM_ENODEV;
+		}
+	}
+
+	rc = vmm_devtree_regmap(np, (virtual_addr_t *)&scu_base, 0);
+	vmm_devtree_dref_node(np);
+	if (rc) {
+		vmm_lerror("Failed to retrive SCU register mapping\n");
+		return rc;
+	}
+
+	return VMM_OK;
+}
+
+void imx_scu_standby_enable(void)
+{
+	u32 val = vmm_readl_relaxed(scu_base);
+
+	val |= SCU_STANDBY_ENABLE;
+	vmm_writel_relaxed(val, scu_base);
+}
+
 static int __init scu_cpu_init(struct vmm_devtree_node *node,
-				unsigned int cpu)
+			       unsigned int cpu)
 {
 	int rc;
 	u32 ncores;
 	physical_addr_t pa;
-	struct vmm_devtree_node *scu_node;
 
 	/* Map SCU base */
 	if (!scu_base) {
-		scu_node = vmm_devtree_find_matching(NULL, scu_matches);
-		if (!scu_node) {
-			return VMM_ENODEV;
-		}
-		rc = vmm_devtree_regmap(scu_node, &scu_base, 0);
-		vmm_devtree_dref_node(scu_node);
-		if (rc) {
+		rc = scu_init(node);
+		if (VMM_OK != rc) {
 			return rc;
 		}
 	}
@@ -180,13 +215,13 @@ static int __init scu_cpu_init(struct vmm_devtree_node *node,
 	}
 
 	/* Check core count from SCU */
-	ncores = scu_get_core_count((void *)scu_base);
+	ncores = scu_get_core_count();
 	if (ncores <= cpu) {
 		return VMM_ENOSYS;
 	}
 
 	/* Check SCU status */
-	if (!scu_cpu_core_is_smp((void *)scu_base, cpu)) {
+	if (!scu_cpu_core_is_smp(cpu)) {
 		return VMM_ENOSYS;
 	}
 
@@ -199,6 +234,7 @@ static int __init scu_cpu_prepare(unsigned int cpu)
 {
 	int rc;
 	u32 val = 0;
+	u32 g_diag_reg;
 	physical_addr_t _start_secondary_pa;
 
 	/* Get physical address secondary startup code */
@@ -209,9 +245,7 @@ static int __init scu_cpu_prepare(unsigned int cpu)
 	}
 
 	/* Enable snooping through SCU */
-	if (scu_base) {
-		scu_enable((void *)scu_base);
-	}
+	scu_enable();
 
 	/* Write to clear address */
 	if (clear_addr[cpu]) {
@@ -229,10 +263,13 @@ static int __init scu_cpu_prepare(unsigned int cpu)
 				      &val, sizeof(u32), FALSE);
 	}
 
+	asm("mrc p15, 0, %0, c15, c0, 1" : "=r" (g_diag_reg) : : "cc");
+	vmm_flush_cache_all();
+
 	return VMM_OK;
 }
 
-static int __init scu_cpu_boot(unsigned int cpu)
+int __init scu_cpu_boot(unsigned int cpu)
 {
 	const struct vmm_cpumask *mask = get_cpu_mask(cpu);
 

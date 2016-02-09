@@ -27,13 +27,17 @@
 #include <linux/reset.h>
 #include <linux/reset-controller.h>
 #include <linux/jiffies.h>
+#include <linux/smp.h>
+
+#include <smp_ops.h>
 
 #define MODULE_AUTHOR			"Jimmy Durand Wesolowski"
 #define MODULE_LICENSE			"GPL"
 #define MODULE_DESC			"i.MX Reset driver"
+#define MODULE_NAME			"i.MX Reset controller"
 #define MODULE_IPRIORITY		(RESET_CONTROLLER_IPRIORITY + 1)
-#define MODULE_INIT			imx_src_init
-#define MODULE_EXIT			imx_src_exit
+#define MODULE_INIT			imx_src_driver_init
+#define MODULE_EXIT			imx_src_driver_exit
 
 #define SRC_SCR				0x000
 #define SRC_GPR1			0x020
@@ -46,7 +50,7 @@
 #define BP_SRC_SCR_CORE1_RST		14
 #define BP_SRC_SCR_CORE1_ENABLE		22
 
-static void __iomem *src_base;
+static void __iomem *src_base = NULL;
 static DEFINE_SPINLOCK(scr_lock);
 
 static const int sw_reset_bits[5] = {
@@ -58,7 +62,7 @@ static const int sw_reset_bits[5] = {
 };
 
 static int imx_src_reset_module(struct reset_controller_dev *rcdev,
-		unsigned long sw_reset_idx)
+				unsigned long sw_reset_idx)
 {
 	unsigned long timeout;
 	unsigned long flags;
@@ -102,9 +106,7 @@ void imx_enable_cpu(int cpu, bool enable)
 {
 	u32 mask, val;
 
-#if 0
 	cpu = cpu_logical_map(cpu);
-#endif /* 0 */
 	mask = 1 << (BP_SRC_SCR_CORE1_ENABLE + cpu - 1);
 	spin_lock(&scr_lock);
 	val = readl_relaxed(src_base + SRC_SCR);
@@ -118,64 +120,25 @@ void imx_set_cpu_jump(int cpu, void *jump_addr)
 {
 	physical_addr_t paddr;
 
-#if 0
 	cpu = cpu_logical_map(cpu);
-#endif /* 0 */
 	if (VMM_OK != vmm_host_va2pa((virtual_addr_t)jump_addr,
 				     &paddr)) {
 		vmm_printf("Failed to get cpu jump physical address (0x%p)\n",
 			   jump_addr);
 	}
-	writel_relaxed(paddr,
-		       src_base + SRC_GPR1 + cpu * 8);
+	writel_relaxed(paddr, src_base + SRC_GPR1 + cpu * 8);
 }
 
 u32 imx_get_cpu_arg(int cpu)
 {
-#if 0
 	cpu = cpu_logical_map(cpu);
-#endif /* 0 */
 	return readl_relaxed(src_base + SRC_GPR1 + cpu * 8 + 4);
 }
 
 void imx_set_cpu_arg(int cpu, u32 arg)
 {
-#if 0
 	cpu = cpu_logical_map(cpu);
-#endif /* 0 */
 	writel_relaxed(arg, src_base + SRC_GPR1 + cpu * 8 + 4);
-}
-
-static int imx_src_probe(struct vmm_device *dev,
-			 const struct vmm_devtree_nodeid *nodeid)
-{
-	int ret = VMM_OK;
-	struct vmm_devtree_node *np = dev->of_node;
-	u32 val;
-
-	ret = vmm_devtree_request_regmap(np, (virtual_addr_t *)&src_base, 0,
-					 "i.MX Reset Control");
-	if (VMM_OK != ret) {
-		vmm_printf("Failed to retrive %s register mapping\n", np->name);
-		return ret;
-	}
-
-	imx_reset_controller.node = np;
-#ifdef CONFIG_RESET_CONTROLLER
-	reset_controller_register(&imx_reset_controller);
-#endif /* CONFIG_RESET_CONTROLLER */
-
-	/*
-	 * force warm reset sources to generate cold reset
-	 * for a more reliable restart
-	 */
-	spin_lock(&scr_lock);
-	val = readl_relaxed(src_base + SRC_SCR);
-	val &= ~(1 << BP_SRC_SCR_WARM_RESET_ENABLE);
-	writel_relaxed(val, src_base + SRC_SCR);
-	spin_unlock(&scr_lock);
-
-	return 0;
 }
 
 static int imx_src_remove(struct vmm_device *dev)
@@ -197,6 +160,66 @@ static const struct vmm_devtree_nodeid imx_src_dt_ids[] = {
 	{ /* sentinel */ }
 };
 
+int __init imx_src_init(struct vmm_devtree_node *np)
+{
+	int rc;
+
+	if (src_base) {
+		return VMM_OK;
+	}
+
+	if (NULL == np) {
+		np = vmm_devtree_find_matching(NULL, imx_src_dt_ids);
+		if (!np) {
+			vmm_lerror("Failed to find " MODULE_NAME " node\n");
+			return VMM_ENODEV;
+		}
+	}
+
+	rc = vmm_devtree_request_regmap(np, (virtual_addr_t *)&src_base, 0,
+					MODULE_NAME);
+	vmm_devtree_dref_node(np);
+	if (VMM_OK != rc) {
+		vmm_lerror("Failed to retrive " MODULE_NAME
+			   " register mapping\n");
+		return rc;
+	}
+
+	return VMM_OK;
+}
+
+static int imx_src_probe(struct vmm_device *dev,
+			 const struct vmm_devtree_nodeid *nodeid)
+{
+	int rc = VMM_OK;
+	struct vmm_devtree_node *np = dev->of_node;
+	u32 val;
+
+	if (!src_base) {
+		rc = imx_src_init(np);
+		if (VMM_OK != rc) {
+			return rc;
+		}
+	}
+
+	imx_reset_controller.node = np;
+#ifdef CONFIG_RESET_CONTROLLER
+	reset_controller_register(&imx_reset_controller);
+#endif /* CONFIG_RESET_CONTROLLER */
+
+	/*
+	 * force warm reset sources to generate cold reset
+	 * for a more reliable restart
+	 */
+	spin_lock(&scr_lock);
+	val = readl_relaxed(src_base + SRC_SCR);
+	val &= ~(1 << BP_SRC_SCR_WARM_RESET_ENABLE);
+	writel_relaxed(val, src_base + SRC_SCR);
+	spin_unlock(&scr_lock);
+
+	return 0;
+}
+
 static struct vmm_driver imx_src_driver = {
 	.name = "i.MX reset driver",
 	.match_table = imx_src_dt_ids,
@@ -204,12 +227,12 @@ static struct vmm_driver imx_src_driver = {
 	.remove = imx_src_remove,
 };
 
-static int __init imx_src_init(void)
+static int __init imx_src_driver_init(void)
 {
 	return vmm_devdrv_register_driver(&imx_src_driver);
 }
 
-static void __exit imx_src_exit(void)
+static void __exit imx_src_driver_exit(void)
 {
 	vmm_devdrv_unregister_driver(&imx_src_driver);
 }

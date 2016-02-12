@@ -22,11 +22,16 @@
  */
 
 #include <vmm_error.h>
+#include <vmm_heap.h>
 #include <vmm_compiler.h>
 #include <vmm_main.h>
 #include <vmm_chardev.h>
 #include <vmm_spinlocks.h>
 #include <vmm_stdio.h>
+#include <vmm_threads.h>
+#include <vmm_completion.h>
+#include <vmm_smp.h>
+#include <vmm_percpu.h>
 #include <arch_atomic.h>
 #include <arch_defterm.h>
 #include <libs/stringlib.h>
@@ -94,14 +99,24 @@ static char const* const _log_prefixes[] = {
 	[VMM_LOGLEVEL_INFO]      = VMM_LOG_INFO,
 };
 
+struct vmm_stdio_buffer {
+	char *buffer;
+	u32 size;
+	int pos;
+	struct vmm_mutex lock;
+};
+
 struct vmm_stdio_ctrl {
 	atomic_t loglevel;
         vmm_spinlock_t lock;
         struct vmm_chardev *dev;
+	struct vmm_thread *thread;
+	struct vmm_completion io_avail;
 };
 
 static struct vmm_stdio_ctrl stdio_ctrl;
 static bool stdio_init_done = FALSE;
+static DEFINE_PER_CPU(struct vmm_stdio_buffer, stdio_buffer);
 
 
 static inline void _vmm_format_error(const char *fmt, char err)
@@ -127,29 +142,112 @@ bool vmm_isprintable(char c)
 	return FALSE;
 }
 
-int vmm_printchars(struct vmm_chardev *cdev, char *ch, u32 num_ch, bool block)
+static bool vmm_stdio_isinit(void)
 {
-	int i, rc;
+	return (NULL != stdio_ctrl.thread);
+}
 
-	if (!ch || !num_ch) {
+static int vmm_stdio_flush(int cpu)
+{
+	char *msg;
+	char *next;
+	u32 len;
+	struct vmm_stdio_buffer *buf = &per_cpu(stdio_buffer, cpu);
+
+	if (!buf->pos) {
+		return VMM_OK;
+	}
+
+	/* vmm_mutex_lock(&buf->lock); */
+	if (0 == buf->pos) {
+		goto out;
+	}
+
+	msg = buf->buffer;
+	next = strnchr(msg, buf->pos, '\n');
+
+	while ((NULL != next) && ('\0' != *next)) {
+		len = next - msg + 1;
+		vmm_chardev_dowrite(stdio_ctrl.dev, (u8 *)msg, len, NULL,
+				    TRUE);
+		buf->pos -= len;
+		msg = next + 1;
+		next = strnchr(msg, buf->pos, '\n');
+	}
+
+	/* Print remaining data */
+	if (buf->pos) {
+		vmm_chardev_dowrite(stdio_ctrl.dev, (u8 *)msg, buf->pos, NULL,
+				    TRUE);
+	}
+
+	buf->pos = 0;
+
+out:
+	/* vmm_mutex_unlock(&buf->lock); */
+
+	return VMM_OK;
+}
+
+static int vmm_stdio_io_avail(int block)
+{
+	if (vmm_stdio_isinit()) {
+		if (block) {
+			return vmm_stdio_flush(arch_smp_id());
+		} else {
+			return vmm_completion_complete(&stdio_ctrl.io_avail);
+		}
+	}
+	return VMM_OK;
+}
+
+static int vmm_stdio_write(struct vmm_chardev *cdev, char ch, int block)
+{
+	struct vmm_stdio_buffer *buf = &this_cpu(stdio_buffer);
+
+	if (block) {
+		vmm_mutex_lock(&buf->lock);
+	} else {
+		if (!vmm_mutex_trylock(&buf->lock)) {
+			return VMM_EAGAIN;
+		}
+	}
+
+	if (buf->pos + 1 >= CONFIG_STDIO_BUFFER) {
+		vmm_stdio_io_avail(block);
+		buf->pos = 0;
+	}
+
+	buf->buffer[buf->pos++] = ch;
+
+	vmm_mutex_unlock(&buf->lock);
+	vmm_stdio_io_avail(block);
+
+	return VMM_OK;
+}
+
+static int vmm_printchars(struct vmm_chardev *cdev, char ch, bool block)
+{
+	int rc = VMM_OK;
+
+	if (!ch) {
 		return VMM_EFAIL;
 	}
 
-	if (stdio_init_done) {
-		if (cdev) {
-			rc = vmm_chardev_dowrite(cdev, (u8 *)ch, num_ch, NULL,
-						 block) ? VMM_OK : VMM_EFAIL;
-		} else {
-			for (i = 0; i < num_ch; i++) {
-				while ((rc = arch_defterm_putc((u8)ch[i])) && block);
-			}
-		}
-	} else {
-		for (i = 0; i < num_ch; i++) {
-			arch_defterm_early_putc(ch[i]);
-		}
-		rc = VMM_OK;
+	if (!stdio_init_done) {
+		return arch_defterm_putc((u8)ch);
 	}
+
+	if (cdev && (stdio_ctrl.dev != cdev)) {
+		if (VMM_OK == vmm_chardev_dowrite(cdev, (u8 *)&ch, 1,
+						  NULL, block)) {
+			return VMM_OK;
+		} else {
+			return VMM_EFAIL;
+		}
+	}
+
+	rc = vmm_stdio_write(cdev, ch, block);
 
 	return rc;
 }
@@ -157,9 +255,19 @@ int vmm_printchars(struct vmm_chardev *cdev, char *ch, u32 num_ch, bool block)
 void vmm_cputc(struct vmm_chardev *cdev, char ch)
 {
 	if (ch == '\n') {
-		vmm_printchars(cdev, "\r", 1, TRUE);
+		int i;
+		u32 size;
+		char proc[8];
+
+		vmm_printchars(cdev, '\r', TRUE);
+		size = vmm_snprintf(proc, sizeof (proc) - 1, "\n#%d ",
+				    arch_smp_id());
+		for (i = 0; i < size; ++i) {
+			vmm_printchars(cdev, proc[i], TRUE);
+		}
+		return;
 	}
-	vmm_printchars(cdev, &ch, 1, TRUE);
+	vmm_printchars(cdev, ch, TRUE);
 }
 
 void vmm_putc(char ch)
@@ -530,7 +638,7 @@ int vmm_scanchars(struct vmm_chardev *cdev, char *ch, u32 num_ch, bool block)
 		return VMM_EFAIL;
 	}
 
-	if (stdio_init_done) {
+	if (vmm_stdio_isinit()) {
 		if (cdev) {
 			rc = (vmm_chardev_doread(cdev, (u8 *)ch, num_ch, NULL,
 						 block) ? VMM_OK : VMM_EFAIL);
@@ -584,6 +692,7 @@ char *vmm_cgets(struct vmm_chardev *cdev, char *s, int maxwidth,
 		maxwidth = (maxwidth < history->width) ? maxwidth :
 							 history->width;
 	}
+
 	while (1) {
 		to_left = FALSE;
 		to_right = FALSE;
@@ -771,9 +880,7 @@ int vmm_stdio_change_device(struct vmm_chardev *cdev)
 		return VMM_EFAIL;
 	}
 
-	vmm_spin_lock(&stdio_ctrl.lock);
 	stdio_ctrl.dev = cdev;
-	vmm_spin_unlock(&stdio_ctrl.lock);
 
 	return VMM_OK;
 }
@@ -791,7 +898,7 @@ void vmm_stdio_change_loglevel(long loglevel)
 /* size of early buffer.
  * This should be enough to hold 80x25 characters
  */
-#define EARLY_BUF_SZ	2048
+#define EARLY_BUF_SZ   2048
 static u32 __initdata stdio_early_count = 0;
 static char __initdata stdio_early_buffer[EARLY_BUF_SZ];
 
@@ -816,9 +923,28 @@ static void __init flush_early_buffer(void)
 	}
 }
 
+static int vmm_stdio_thread(void *udata)
+{
+	int i;
+	u64 delay;
+
+	while (1) {
+		delay = 1000000000UL;
+		vmm_completion_wait_timeout(&stdio_ctrl.io_avail, &delay);
+
+		for (i = 0; i < CONFIG_CPU_COUNT; ++i) {
+			vmm_stdio_flush(i);
+		}
+	}
+
+	return VMM_OK;
+}
+
 int __init vmm_stdio_init(void)
 {
-	int rc;
+	int rc = VMM_OK;
+	int i;
+	struct vmm_stdio_buffer *buf;
 
 	/* Reset memory of control structure */
 	memset(&stdio_ctrl, 0, sizeof(stdio_ctrl));
@@ -832,6 +958,32 @@ int __init vmm_stdio_init(void)
 	/* Set current device to NULL */
 	stdio_ctrl.dev = NULL;
 
+	/* Initialize stdio buffers */
+	for (i = 0; i < CONFIG_CPU_COUNT; ++i) {
+		buf = &per_cpu(stdio_buffer, i);
+		memset(buf, sizeof (struct vmm_stdio_buffer), 0);
+
+		buf->buffer = vmm_zalloc(CONFIG_STDIO_BUFFER);
+		if (NULL == buf->buffer) {
+			return VMM_EFAIL;
+		}
+		INIT_MUTEX(&buf->lock);
+	}
+
+	/* Initialize stdio worker thread */
+	stdio_ctrl.thread = vmm_threads_create("stdio",
+					       vmm_stdio_thread, NULL,
+					       VMM_THREAD_DEF_PRIORITY,
+					       VMM_THREAD_DEF_TIME_SLICE);
+	if (NULL == stdio_ctrl.thread) {
+		vmm_lerror("%s l.%d: Failed to create stdio worker thread\n",
+			   __FUNCTION__, __LINE__);
+		return VMM_EFAIL;
+	}
+
+	/* Initialize completion event */
+	INIT_COMPLETION(&stdio_ctrl.io_avail);
+
 	/* Initialize default serial terminal */
 	if ((rc = arch_defterm_init())) {
 		return rc;
@@ -843,6 +995,8 @@ int __init vmm_stdio_init(void)
 	/* Flush early buffer */
 	flush_early_buffer();
 
-	return VMM_OK;
+	rc = vmm_threads_start(stdio_ctrl.thread);
+
+	return rc;
 }
 

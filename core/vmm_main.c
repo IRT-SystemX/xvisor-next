@@ -390,13 +390,6 @@ static void __init init_bootcpu(void)
 		goto init_bootcpu_fail;
 	}
 
-	/* Initialize standerd input/output */
-	vmm_printf("init: standard I/O\n");
-	ret = vmm_stdio_init();
-	if (ret) {
-		goto init_bootcpu_fail;
-	}
-
 	/* Initialize clocksource manager */
 	vmm_printf("init: clocksource manager\n");
 	ret = vmm_clocksource_init();
@@ -442,6 +435,13 @@ static void __init init_bootcpu(void)
 	/* Initialize hypervisor threads */
 	vmm_printf("init: hypervisor threads\n");
 	ret = vmm_threads_init();
+	if (ret) {
+		goto init_bootcpu_fail;
+	}
+
+	/* Initialize standerd input/output */
+	vmm_printf("init: standard I/O\n");
+	ret = vmm_stdio_init();
 	if (ret) {
 		goto init_bootcpu_fail;
 	}

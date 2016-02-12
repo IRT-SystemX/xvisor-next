@@ -98,9 +98,6 @@ bool vmm_iscontrol(char c);
 /** Check if a character is printable */
 bool vmm_isprintable(char c);
 
-/** Low-level print characters function */
-int vmm_printchars(struct vmm_chardev *cdev, char *ch, u32 num_ch, bool block);
-
 /** Put character to character device */
 void vmm_cputc(struct vmm_chardev *cdev, char ch);
 

@@ -307,6 +307,8 @@ struct vmm_thread *vmm_threads_create_rt(const char *thread_name,
 	/* Create thread structure instance */
 	tinfo = vmm_malloc(sizeof(struct vmm_thread));
 	if (!tinfo) {
+		vmm_lerror("%s l.%d: Failed to allocate thread %s\n",
+			   __FUNCTION__, __LINE__, thread_name);
 		return NULL;
 	}
 	tinfo->tfn = thread_fn;
@@ -330,6 +332,8 @@ struct vmm_thread *vmm_threads_create_rt(const char *thread_name,
 			CONFIG_THREAD_STACK_SIZE, thread_priority,
 			thread_nsecs, thread_deadline, thread_periodicity);
 	if (!tinfo->tvcpu) {
+		vmm_lerror("%s l.%d: Failed to create vcpu for thread %s\n",
+			   __FUNCTION__, __LINE__, thread_name);
 		vmm_free(tinfo);
 		return NULL;
 	}

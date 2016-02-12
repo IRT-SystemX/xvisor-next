@@ -468,6 +468,8 @@ struct vmm_vcpu *vmm_manager_vcpu_orphan_create(const char *name,
 
 	/* Sanity checks */
 	if (name == NULL || start_pc == 0 || time_slice_nsecs == 0) {
+		vmm_lerror("%s l.%d: Failed to create vcpu %s\n",
+			   __FUNCTION__, __LINE__, name);
 		return NULL;
 	}
 	if (VMM_VCPU_MAX_PRIORITY < priority) {
@@ -498,6 +500,8 @@ struct vmm_vcpu *vmm_manager_vcpu_orphan_create(const char *name,
 		}
 	}
 	if (!vcpu) {
+		vmm_lerror("%s l.%d: No more vcpu slot available for %s\n",
+			   __FUNCTION__, __LINE__, name);
 		goto fail;
 	}
 
@@ -507,6 +511,8 @@ struct vmm_vcpu *vmm_manager_vcpu_orphan_create(const char *name,
 	vcpu->subid = 0;
 	if (strlcpy(vcpu->name, name, sizeof(vcpu->name)) >=
 	    sizeof(vcpu->name)) {
+		vmm_lerror("%s l.%d: Failed to set vcpu name to %s\n",
+			   __FUNCTION__, __LINE__, name);
 		goto fail_avail;
 	}
 	vcpu->node = NULL;
@@ -530,6 +536,8 @@ struct vmm_vcpu *vmm_manager_vcpu_orphan_create(const char *name,
 	vcpu->start_pc = start_pc;
 	vcpu->stack_va = (virtual_addr_t)vmm_malloc(stack_sz);
 	if (!vcpu->stack_va) {
+		vmm_lerror("%s l.%d: Failed to allocate vcpu %s stack\n",
+			   __FUNCTION__, __LINE__, name);
 		goto fail_list_del;
 	}
 	vcpu->stack_sz = stack_sz;
@@ -564,6 +572,8 @@ struct vmm_vcpu *vmm_manager_vcpu_orphan_create(const char *name,
 	/* Initialize architecture specific context */
 	vcpu->arch_priv = NULL;
 	if (arch_vcpu_init(vcpu)) {
+		vmm_lerror("%s l.%d: Failed to init vcpu %s\n",
+			   __FUNCTION__, __LINE__, name);
 		goto fail_free_stack;
 	}
 
@@ -578,6 +588,8 @@ struct vmm_vcpu *vmm_manager_vcpu_orphan_create(const char *name,
 	/* Notify scheduler about new VCPU */
 	if (vmm_manager_vcpu_set_state(vcpu,
 					VMM_VCPU_STATE_RESET)) {
+		vmm_lerror("%s l.%d: Failed to set vcpu %s state\n",
+			   __FUNCTION__, __LINE__, name);
 		goto fail_vcpu_deinit;
 	}
 

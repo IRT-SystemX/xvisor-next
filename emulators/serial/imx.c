@@ -175,6 +175,11 @@
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 
+enum imx_sig_tx_state {
+	IMX_SIG_TX_STATE_IDLE = 0,	/* IDLE */
+	IMX_SIG_TX_STATE_TXING,		/* Transmitting */
+	IMX_SIG_TX_STATE_NEED_CLEAR,	/* Must be cleared */
+};
 
 struct imx_state {
 	struct vmm_guest *guest;
@@ -185,6 +190,7 @@ struct imx_state {
 	u32 rdirq;
 	struct fifo *rd_fifo;
 	u16 regs[(IMX21_ONEMS - UCR1) / 4 + 1];
+	enum imx_sig_tx_state tx_state;
 	u16 uts;
 	u8 tx;
 };
@@ -213,6 +219,12 @@ static u16 _reg_read(const struct imx_state *s, u32 reg)
 
 	BUG_ON(offset >= ARRAY_SIZE(s->regs));
 	return s->regs[offset];
+}
+
+static inline bool _empty_irq_enabled_is(const struct imx_state *s)
+{
+	return ((_reg_read(s, UCR1) & UCR1_TXMPTYEN) &&
+		(_reg_read(s, USR2) & USR2_TXFE));
 }
 
 static void _reg_write(struct imx_state *s, u32 reg, u16 val)
@@ -342,17 +354,20 @@ static int imx_reg_write(struct imx_state *s, u32 offset,
 	u16 ack = 0;
 	u16 usr1 = 0;
 	u16 usr2 = 0;
+	u16 ucr1 = 0x0000;
 	bool recv_char = FALSE;
 	u16 val = (u16)(src & ~src_mask);
+	int ret = VMM_OK;
 
 	vmm_spin_lock(&s->lock);
 
-	/* UCR1->vmm_devemu_emulate_irq(s->guest, s->irq, 0); */
 
 	usr1 = _reg_read(s, USR1);
 	usr2 = _reg_read(s, USR2);
+
 	if (URXD0 == offset) {
-		/* Do nothing */
+		/* Fifo is not empty anymore */
+		_reg_clear_mask(s, USR2, USR2_TXFE);
 	} else if (URTX0 == offset) {
 		s->tx = (u8)src;
 		recv_char = TRUE;
@@ -364,29 +379,50 @@ static int imx_reg_write(struct imx_state *s, u32 offset,
 		ack = 1;
 	} else {
 		if (reg < ARRAY_SIZE(s->regs)) {
+			ucr1 = _reg_read(s, UCR1); /* Keep ucr1 around */
 			s->regs[reg] = val;
 
-			if (UCR2 == offset) {
+			/* TXMPTYEN was preivously set and was just unset */
+			if ((UCR1 == offset) && (ucr1 & UCR1_TXMPTYEN) && !(val & UCR1_TXMPTYEN)) {
+
+				/* Re-enable interrupts on empty fifo */
+				_reg_set_mask(s, UCR1, UCR1_TXMPTYEN);
+				if (s->tx_state == IMX_SIG_TX_STATE_TXING) {
+					s->tx_state = IMX_SIG_TX_STATE_NEED_CLEAR;
+				}
+				/* Done. We will wait for the CTSC bit to be set to
+				 * tell the guest serial driver that the emulated UART is ready */
+				goto end;
+			}
+
+			/* CTSC has been set, and we are ready to release the transmitter */
+                        if ((s->tx_state == IMX_SIG_TX_STATE_NEED_CLEAR) &&
+			    (_reg_read(s, UCR2) & UCR2_CTSC)) {
+				/* Driver is now ready to send */
+				_reg_set_mask(s, USR1, USR1_RTSD);
+				s->tx_state = IMX_SIG_TX_STATE_IDLE;
+				imx_set_txirq(s, 0);
+				goto end;
+                        }
+
+                        if (UCR2 == offset) {
 				_reg_clear_mask(s, UCR2, UCR2_SRST);
 			}
 		} else if (s->data->uts_reg == offset) {
 			s->uts = (s->uts & src_mask) | (val & UTS_WR_MASK);
 		} else {
-			vmm_printf("i.MX UART unmanaged read at 0x%x\n",
-				   offset);
+			vmm_printf("i.MX UART unmanaged write at 0x%x\n", offset);
 		}
 	}
 
-	if (ack && ((usr1 != _reg_read(s, USR1)) ||
-		    (usr2 != _reg_read(s, USR2)))) {
-		imx_set_txirq(s, 0);
-	}
-
-	vmm_spin_unlock(&s->lock);
-
 	if (!(_reg_read(s, UCR1) | UCR1_UARTEN) ||
 	    !(_reg_read(s, UCR2) | UCR2_TXEN)) {
-		return VMM_ENOTAVAIL;
+		ret = VMM_ENOTAVAIL;
+		goto end;
+	}
+
+	if (ack && ((usr1 != _reg_read(s, USR1)) || (usr2 != _reg_read(s, USR2)))) {
+		imx_set_txirq(s, 0);
 	}
 
 	if (recv_char) {
@@ -407,19 +443,24 @@ static int imx_reg_write(struct imx_state *s, u32 offset,
 		 * UTS_TX[FULL|EMPTY].
 		 */
 		vmm_vserial_receive(s->vser, val, len);
-	}
+        }
 
-	/* Is TX ready interrupt enabled? */
-	if ((_reg_read(s, USR1) & USR1_TRDY) &&
-	    (_reg_read(s, UCR1) & UCR1_TRDYEN)) {
+
+        if (_empty_irq_enabled_is(s)) {
+		s->tx_state = IMX_SIG_TX_STATE_TXING;
+		imx_set_txirq(s, 1);
+        } else if ((_reg_read(s, USR1) & USR1_TRDY) &&
+		 (_reg_read(s, UCR1) & UCR1_TRDYEN)) {
 		/*
 		 * As we do not manage the vserial overflow, we are always have
 		 * the TX ready interrupt.
 		 */
 		imx_set_txirq(s, 1);
-	}
+        }
 
-	return VMM_OK;
+end:
+        vmm_spin_unlock(&s->lock);
+	return ret;
 }
 
 static bool imx_vserial_can_send(struct vmm_vserial *vser)
@@ -547,6 +588,7 @@ static int imx_emulator_reset(struct vmm_emudev *edev)
 	_reg_write(s, UESC, 0x0000002B);
 	_reg_write(s, UBRC, 0x00000004);
 	s->uts = 0x00000060;
+	s->tx_state = IMX_SIG_TX_STATE_IDLE;
 
 	vmm_spin_unlock(&s->lock);
 

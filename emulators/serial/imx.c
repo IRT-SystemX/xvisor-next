@@ -432,17 +432,19 @@ static int imx_vserial_send(struct vmm_vserial *vser, u8 data)
 	bool set_irq = FALSE;
 	u32 rd_count;
 	struct imx_state *s = vmm_vserial_priv(vser);
-
-	if (!(_reg_read(s, UCR1) & UCR1_UARTEN) ||
-	    !(_reg_read(s, UCR2) & UCR2_RXEN)) {
-		return VMM_ENOTAVAIL;
-	}
+	int ret = VMM_OK;
 
 	vmm_spin_lock(&s->lock);
 
+	if (!(_reg_read(s, UCR1) & UCR1_UARTEN) ||
+	    !(_reg_read(s, UCR2) & UCR2_RXEN)) {
+		ret = VMM_ENOTAVAIL;
+		goto unlock;
+	}
+
 	if (fifo_isfull(s->rd_fifo)) {
-		vmm_spin_unlock(&s->lock);
-		return VMM_ENOTAVAIL;
+		ret = VMM_ENOTAVAIL;
+		goto unlock;
 	}
 
 	fifo_enqueue(s->rd_fifo, &data, TRUE);
@@ -461,13 +463,13 @@ static int imx_vserial_send(struct vmm_vserial *vser, u8 data)
 		}
 	}
 
-	vmm_spin_unlock(&s->lock);
-
 	if (set_irq) {
 		imx_set_rdirq(s, 1);
 	}
 
-	return VMM_OK;
+unlock:
+	vmm_spin_unlock(&s->lock);
+	return ret;
 }
 
 static int imx_emulator_read8(struct vmm_emudev *edev,

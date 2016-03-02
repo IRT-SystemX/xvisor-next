@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014 Institut de Recherche Technologique SystemX and OpenWide.
+ * Copyright (C) 2014-2016 Institut de Recherche Technologique SystemX and OpenWide.
  * All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -18,6 +18,7 @@
  *
  * @file imx.c
  * @author Jimmy Durand Wesolowski (jimmy.durand-wesolowski@openwide.fr)
+ * @author Jean Guyomarc'h (jean.guyomarch@openwide.fr)
  * @brief Motorola/Freescale i.MX serial emulator.
  * @details This source file implements the i.MX serial emulator.
  *

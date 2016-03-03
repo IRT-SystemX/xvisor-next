@@ -48,7 +48,6 @@
 #include <vmm_compiler.h>
 #include <vmm_clocksource.h>
 #include <vmm_clockchip.h>
-#include <vmm_smp.h>
 
 #define EPITCR				(0x00)
 #define EPITSR				(0x04)
@@ -347,10 +346,6 @@ static int __cpuinit epit_clockchip_init(struct vmm_devtree_node *node)
 	u32 clock, hirq, timer_num;
 	struct epit_clockchip *ecc;
 
-	if (!vmm_smp_is_bootcpu()) {
-		return VMM_OK;
-	}
-
 	/* Read clock frequency */
 	rc = vmm_devtree_clock_frequency(node, &clock);
 	if (rc) {
@@ -396,11 +391,7 @@ static int __cpuinit epit_clockchip_init(struct vmm_devtree_node *node)
 	ecc->clkchip.name = node->name;
 	ecc->clkchip.hirq = hirq;
 	ecc->clkchip.rating = 300;
-#ifdef CONFIG_SMP
-	ecc->clkchip.cpumask = vmm_cpumask_of(vmm_smp_processor_id());
-#else
-	ecc->clkchip.cpumask = cpu_all_mask;
-#endif
+	ecc->clkchip.cpumask = vmm_cpumask_of(0);
 	ecc->clkchip.features = VMM_CLOCKCHIP_FEAT_ONESHOT;
 	vmm_clocks_calc_mult_shift(&ecc->clkchip.mult,
 				   &ecc->clkchip.shift,
@@ -419,13 +410,6 @@ static int __cpuinit epit_clockchip_init(struct vmm_devtree_node *node)
 	if (rc) {
 		goto irq_fail;
 	}
-
-#ifdef CONFIG_SMP
-	rc = vmm_host_irq_set_affinity(hirq, vmm_cpumask_of(vmm_smp_processor_id()), true);
-	if (rc) {
-		goto irq_fail;
-	}
-#endif
 
 	/* Register clockchip */
 	rc = vmm_clockchip_register(&ecc->clkchip);

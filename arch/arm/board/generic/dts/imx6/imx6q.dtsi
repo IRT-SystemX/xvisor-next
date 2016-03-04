@@ -835,7 +835,7 @@
 			disp_dev = "ldb";
 			int_clk = <0>;
 			late_init = <0>;
-			status = "disabled";
+			status = "okay";
 		};
 
 		backlight_lvds {

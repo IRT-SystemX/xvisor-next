@@ -30,6 +30,11 @@ typedef unsigned long virtual_size_t;
 typedef unsigned long physical_addr_t;
 typedef unsigned long physical_size_t;
 
+#define __ARCH_PRIPTR_PREFIX	"l"
+#define __ARCH_PRISIZE_PREFIX	"l"
+#define __ARCH_PRIPTR_DIGITS	"16"
+#define __ARCH_PRI64_PREFIX	"l"
+
 typedef struct {
 	volatile long counter;
 } atomic_t;

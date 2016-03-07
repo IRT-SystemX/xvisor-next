@@ -340,7 +340,11 @@ static int print(char **out, u32 *out_len, struct vmm_chardev *cdev,
 					format += 2;
 					pc += printi(out, out_len, cdev, tmp,
 						16, 0, width, flags, 'A');
-				} else {
+				} else if ((*(format + 2) == 'd') || (*(format + 2) == 'i')) {
+					format += 1;
+					pc += printi(out, out_len, cdev, tmp,
+						10, 1, width, flags, '0');
+				} else { /* No specifier. Treated as %lld, but non-standard... */
 					format += 1;
 					pc += printi(out, out_len, cdev, tmp,
 						10, 1, width, flags, '0');
@@ -365,7 +369,12 @@ static int print(char **out, u32 *out_len, struct vmm_chardev *cdev,
 						va_arg(args, unsigned long),
 						10, 0, width, flags, 'a');
 					acnt += sizeof(unsigned long);
-				} else {
+				} else if ((*(format + 1) == 'd') || (*(format + 1) == 'i')) {
+					pc += printi(out, out_len, cdev,
+						va_arg(args, long),
+						10, 1, width, flags, '0');
+					acnt += sizeof(long);
+				} else { /* No specifier. Treated as %ld, but non-standard... */
 					pc += printi(out, out_len, cdev,
 						va_arg(args, long),
 						10, 1, width, flags, '0');

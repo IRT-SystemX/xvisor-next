@@ -1,5 +1,7 @@
 /**
  * Copyright (c) 2010 Anup Patel.
+ *               2016 Open Wide
+ *               2016 Institut de Recherche Technologique SystemX
  * All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -18,6 +20,7 @@
  *
  * @file vmm_stdio.c
  * @author Anup Patel (anup@brainfault.org)
+ * @author Jean Guyomarc'h (jean.guyomarch@openwide.fr)
  * @brief source file for standerd input/output
  */
 
@@ -267,7 +270,7 @@ static int print(char **out, u32 *out_len, struct vmm_chardev *cdev,
 					     s ? s : "(null)", width, flags);
 				continue;
 			}
-			if (*format == 'd') {
+			if ((*format == 'd') || (*format == 'i')) {
 				pc += printi(out, out_len, cdev,
 					va_arg(args, int),
 					10, 1, width, flags, '0');

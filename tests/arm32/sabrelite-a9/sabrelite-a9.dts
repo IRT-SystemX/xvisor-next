@@ -105,8 +105,8 @@
 			address_type = "memory";
 			guest_physical_addr = <0x02600000>;
 			physical_size = <0x00400000>;
-			device_type = "misc";
-			compatible = "zero";
+			device_type = "video";
+			compatible = "imx-ipuv3";
 		};
 
 		ipu2 {
@@ -114,8 +114,8 @@
 			address_type = "memory";
 			guest_physical_addr = <0x02A00000>;
 			physical_size = <0x00400000>;
-			device_type = "misc";
-			compatible = "zero";
+			device_type = "video";
+			compatible = "imx-ipuv3";
 		};
 
 		iomux {

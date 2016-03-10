@@ -1,5 +1,8 @@
 #/**
 # Copyright (c) 2015 Anup Patel.
+#               2016 Open Wide
+#               2016 Institut de Recherche Technologique SystemX
+#
 # All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -18,7 +21,9 @@
 #
 # @file objects.mk
 # @author Anup Patel (anup@brainfault.org)
+# @author Jean Guyomarc'h (jean.guyomarch@openwide.fr)
 # @brief list of pass-through emulator objects
 # */
 
 emulators-objs-$(CONFIG_EMU_PT_SIMPLE)+= pt/simple.o
+emulators-objs-$(CONFIG_EMU_PT_DEDICATED)+= pt/dedicated.o

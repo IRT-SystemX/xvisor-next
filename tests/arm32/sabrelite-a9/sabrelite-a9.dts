@@ -42,8 +42,8 @@
 			address_type = "memory";
 			guest_physical_addr = <0x00130000>;
 			physical_size = <0x00004000>;
-			device_type = "misc";
-			compatible = "zero";
+			device_type = "pt";
+			compatible = "dedicated";
 		};
 
 		gpu_p2 {
@@ -51,8 +51,8 @@
 			address_type = "memory";
 			guest_physical_addr = <0x00134000>;
 			physical_size = <0x00004000>;
-			device_type = "misc";
-			compatible = "zero";
+			device_type = "pt";
+			compatible = "dedicated";
 		};
 
 		gpu_p3 {
@@ -60,8 +60,8 @@
 			address_type = "memory";
 			guest_physical_addr = <0x02204000>;
 			physical_size = <0x00004000>;
-			device_type = "misc";
-			compatible = "zero";
+			device_type = "pt";
+			compatible = "dedicated";
 		};
 
 		ocram {
@@ -105,8 +105,8 @@
 			address_type = "memory";
 			guest_physical_addr = <0x02600000>;
 			physical_size = <0x00400000>;
-			device_type = "video";
-			compatible = "imx-ipuv3";
+			device_type = "pt";
+			compatible = "dedicated";
 		};
 
 		ipu2 {
@@ -114,8 +114,8 @@
 			address_type = "memory";
 			guest_physical_addr = <0x02A00000>;
 			physical_size = <0x00400000>;
-			device_type = "video";
-			compatible = "imx-ipuv3";
+			device_type = "pt";
+			compatible = "dedicated";
 		};
 
 		iomux {

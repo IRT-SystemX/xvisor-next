@@ -37,59 +37,64 @@
 #define	MODULE_INIT			pt_dedicated_emulator_init
 #define	MODULE_EXIT			pt_dedicated_emulator_exit
 
-#define _pt_dedicated_WRITE(emudev_, offset_, value_)					\
+
+/*============================================================================*
+ *                         Pass-Through Memory Access                         *
+ *============================================================================*/
+
+#define _PT_DEDICATED_WRITE(emudev_, offset_, value_)					\
 	(vmm_host_memory_write((emudev_)->reg->hphys_addr + (offset_),			\
 			       &(value_), sizeof(value_), false) == sizeof(value_))	\
 	? VMM_OK : VMM_EFAIL								\
 
-#define _pt_dedicated_READ(emudev_, offset_, ret_)					\
+#define _PT_DEDICATED_READ(emudev_, offset_, ret_)					\
 	(vmm_host_memory_read((emudev_)->reg->hphys_addr + (offset_),			\
 			      (ret_), sizeof(*(ret_)), false) == sizeof(*(ret_)))	\
 	? VMM_OK : VMM_EFAIL								\
-
-
 
 static int pt_dedicated_emulator_read8(struct vmm_emudev	*edev,
 		physical_addr_t				 offset,
 		u8					*dst)
 {
-	return _pt_dedicated_READ(edev, offset, dst);
+	return _PT_DEDICATED_READ(edev, offset, dst);
 }
 
 static int pt_dedicated_emulator_read16(struct vmm_emudev	*edev,
 		physical_addr_t					 offset,
 		u16						*dst)
 {
-	return _pt_dedicated_READ(edev, offset, dst);
+	return _PT_DEDICATED_READ(edev, offset, dst);
 }
 
 static int pt_dedicated_emulator_read32(struct vmm_emudev *edev,
 		physical_addr_t				  offset,
 		u32					 *dst)
 {
-	return _pt_dedicated_READ(edev, offset, dst);
+	return _PT_DEDICATED_READ(edev, offset, dst);
 }
 
 static int pt_dedicated_emulator_write8(struct vmm_emudev *edev,
 		physical_addr_t				  offset,
 		u8					  src)
 {
-	return _pt_dedicated_WRITE(edev, offset, src);
+	return _PT_DEDICATED_WRITE(edev, offset, src);
 }
 
 static int pt_dedicated_emulator_write16(struct vmm_emudev	*edev,
 		physical_addr_t					 offset,
 		u16						 src)
 {
-	return _pt_dedicated_WRITE(edev, offset, src);
+	return _PT_DEDICATED_WRITE(edev, offset, src);
 }
 
 static int pt_dedicated_emulator_write32(struct vmm_emudev	*edev,
 		physical_addr_t					 offset,
 		u32						 src)
 {
-	return _pt_dedicated_WRITE(edev, offset, src);
+	return _PT_DEDICATED_WRITE(edev, offset, src);
 }
+
+
 
 static int pt_dedicated_emulator_reset(struct vmm_emudev *edev)
 {

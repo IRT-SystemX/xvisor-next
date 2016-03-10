@@ -153,11 +153,7 @@ static int cmd_memory_dump(struct vmm_chardev *cdev,
 			page_mapped = TRUE;
 		}
 		if (!(w * wsz & 0x0000000F)) {
-			if (sizeof(physical_addr_t) == sizeof(u64)) {
-				vmm_cprintf(cdev, "\n%016llx:", addr);
-			} else {
-				vmm_cprintf(cdev, "\n%08x:", addr);
-			}
+			vmm_cprintf(cdev, "\n%"PRIADDR":", addr);
 		}
 		addr_offset = (addr & VMM_PAGE_MASK);
 		switch (wsz) {

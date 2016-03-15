@@ -73,6 +73,14 @@
 		/* }; */
 	};
 
+	vio {
+		virtio_block@00118000 {
+			compatible = "virtio,mmio";
+			reg = <0x00118000 0x1000>;
+			interrupts = <144>;
+		};
+	};
+
 	soc {
 
 		busfreq { /* BUSFREQ */

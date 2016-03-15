@@ -8,7 +8,8 @@
 
 	aliases {
 		mem0 = &MEM0;
-		net0 = &NET0;
+		//net0 = &NET0;
+		disk0 = &DISK0;
 	};
 
 	vcpus {
@@ -292,16 +293,28 @@
 		/* 	interrupts = <35>; */
 		/* }; */
 
-		NET0: virtio-net0 {
+//		NET0: virtio-net0 {
+//			manifest_type = "virtual";
+//			address_type = "memory";
+//			device_type = "virtio";
+//			compatible = "virtio,mmio";
+//			virtio_type = <1>;
+//			guest_physical_addr = <0x0220c000>;
+//			physical_size = <0x1000>;
+//			switch = ""; /* Override this before guest creation */
+//			interrupts = <42>;
+//		};
+
+		DISK0: virtio-blk0 {
 			manifest_type = "virtual";
 			address_type = "memory";
 			device_type = "virtio";
 			compatible = "virtio,mmio";
-			virtio_type = <1>;
-			guest_physical_addr = <0x0220c000>;
+			virtio_type = <2>;
+			guest_physical_addr = <0x00118000>; /* In a "reserved" region */
 			physical_size = <0x1000>;
-			switch = ""; /* Override this before guest creation */
-			interrupts = <42>;
+			blkdev = "mmc0p1"; // XXX: this is just the second partition on the sd card
+			interrupts = <144>;
 		};
 
 		gpio1: gpio@0209c000 {

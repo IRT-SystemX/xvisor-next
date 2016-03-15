@@ -165,8 +165,7 @@ static void orphan_i2c_transfer(struct vmm_guest * guest, void *param){
 			/* i2c transfer */
 			ret = i2c_transfer(vi2cdev->adapter, &vi2cdev->msg, 1);
 			if (ret < 1)
-				DPRINTF("virtio i2c: call i2c transfert \
-fail with error %d\n", ret);
+				DPRINTF("virtio i2c: call i2c transfert fail with error %d\n", ret);
 
 			len_write += set_msg_buf(vi2cdev, ret);
 

@@ -270,36 +270,6 @@
 			compatible = "zero";
 		};
 
-		/* /\* Emulate EPIT with a SP804 for now*\/ */
-		/* timer0_1_legacy { */
-		/* 	manifest_type = "virtual"; */
-		/* 	address_type = "memory"; */
-		/* 	guest_physical_addr = <0x020D0000>; */
-		/* 	physical_size = <0x1000>; */
-		/* 	device_type = "timer"; */
-		/* 	compatible = "primecell,sp804"; */
-		/* 	interrupts = <34>; */
-		/* }; */
-
-		/* epit1 { */
-		/* 	manifest_type = "virtual"; */
-		/* 	address_type = "memory"; */
-		/* 	guest_physical_addr = <0x020d0000>; */
-		/* 	physical_size = <0x1000>; */
-		/* 	device_type = "misc"; */
-		/* 	compatible = "zero"; */
-		/* }; */
-
-		/* timer2_3_legacy { */
-		/* 	manifest_type = "virtual"; */
-		/* 	address_type = "memory"; */
-		/* 	guest_physical_addr = <0x10012000>; */
-		/* 	physical_size = <0x1000>; */
-		/* 	device_type = "timer"; */
-		/* 	compatible = "primecell,sp804"; */
-		/* 	interrupts = <35>; */
-		/* }; */
-
 		NET0: virtio-net0 {
 			manifest_type = "virtual";
 			address_type = "memory";
@@ -310,6 +280,18 @@
 			physical_size = <0x1000>;
 			switch = ""; /* Override this before guest creation */
 			interrupts = <42>;
+		};
+
+		DISK0: virtio-blk0 {
+			manifest_type = "virtual";
+			address_type = "memory";
+			device_type = "virtio";
+			compatible = "virtio,mmio";
+			virtio_type = <2>;
+			guest_physical_addr = <0x00118000>; /* In a "reserved" region */
+			physical_size = <0x1000>;
+			blkdev = "mmc0";
+			interrupts = <144>;
 		};
 
 		I2C0: virtio-i2c0@021a0000 {

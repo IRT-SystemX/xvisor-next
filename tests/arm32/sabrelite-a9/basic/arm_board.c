@@ -64,8 +64,8 @@ u32 arm_board_linux_machine_type(void)
 void arm_board_linux_default_cmdline(char *cmdline, u32 cmdline_sz)
 {
 	arm_strcpy(cmdline, "root=/dev/ram rw earlyprintk");
-	/* VirtIO Network Device */
-	arm_strcat(cmdline, " virtio_mmio.device=64K@0x20100000:42");
+        /* VirtIO Network Device */
+        //arm_strcat(cmdline, " virtio_mmio.device=64K@0x20100000:42"); // FIXME Bad IRQ
 	/* SabreLite/Nitrogen6X specific */
 	arm_strcat(cmdline, " enable_wait_mode=off "
 		   "video=mxcfb0:dev=ldb,LDB-XGA,if=RGB666 video=mxcfb1:off "

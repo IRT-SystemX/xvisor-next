@@ -352,7 +352,7 @@
 			virtio_type = <3>;
 			guest_physical_addr = <0x0220d000>;
 			physical_size = <0x1000>;
-			interrupts = <86>;
+			interrupts = <145>;
 		};
 
 		nor_flash0 {

@@ -344,6 +344,15 @@
 			device_type = "misc";
 			compatible = "zero";
 		};
+		
+		i2c {
+			manifest_type = "virtual";
+			address_type = "memory";
+			guest_physical_addr = <0x021a4000>;
+			physical_size = <0x4000>;
+			device_type = "misc";
+			compatible = "zero";
+		};
 
 		virtio-con0 {
 			manifest_type = "virtual";

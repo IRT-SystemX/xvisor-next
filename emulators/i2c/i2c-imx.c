@@ -118,6 +118,7 @@ static int i2c_imx_reg_read(struct i2c_imx_state *i2c_imx,
 			  u32 offset,
 			  u32 *dst)
 {
+	/* __DEBUG__ */ vmm_printf("**** %s: offset= 0x%08x \n", __func__, offset >> IMX_I2C_REGSHIFT);
 	int ret = VMM_OK;
 
 	vmm_spin_lock(&i2c_imx->lock);
@@ -125,25 +126,31 @@ static int i2c_imx_reg_read(struct i2c_imx_state *i2c_imx,
 	switch (offset >> IMX_I2C_REGSHIFT) {
 		case IMX_I2C_IADR:
 			*dst = (i2c_imx->i2c_IADR & IADR_RD_MASK);
+			/* __DEBUG__ */ vmm_printf("**** %s: Read i2c_IADR: 0x%08x \n",__func__, *dst);
 			break;
 	
 		case IMX_I2C_IFDR:
 			*dst = (i2c_imx->i2c_IFDR & IFDR_RD_MASK);
+			/* __DEBUG__ */ vmm_printf("**** %s: Read i2c_IFDR: 0x%08x \n",__func__, *dst);
 			break;
 
 		case IMX_I2C_I2CR:
 			*dst = (i2c_imx->i2c_I2CR & I2CR_RD_MASK);
+			/* __DEBUG__ */ vmm_printf("**** %s: Read i2c_I2CR: 0x%08x \n",__func__, *dst);
 			break;
 
 		case IMX_I2C_I2SR:
 			*dst = (i2c_imx->i2c_I2SR & I2SR_RD_MASK);
+			/* __DEBUG__ */ vmm_printf("**** %s: Read i2c_I2SR: 0x%08x \n",__func__, *dst);
 			break;
 
 		case IMX_I2C_I2DR:
 			*dst = (i2c_imx->i2c_I2DR & I2DR_RD_MASK);
+			/* __DEBUG__ */ vmm_printf("**** %s: Read i2c_I2DR: 0x%08x \n",__func__, *dst);
 			break;	
 
 		default:
+			/* __DEBUG__ */ vmm_printf("**** %s: Read default: 0x%08x \n",__func__, *dst);
 			ret = VMM_EINVALID;
 			break;
 	};
@@ -157,6 +164,7 @@ static int i2c_imx_emulator_read8(struct vmm_emudev *edev,
 				physical_addr_t offset,
 				u8 *dst)
 {
+	/* __DEBUG__ */ vmm_printf("**** %s \n",__func__);
 	u32 val = 0;
 	int ret = VMM_OK;
 
@@ -172,6 +180,7 @@ static int i2c_imx_emulator_read16(struct vmm_emudev *edev,
 				 physical_addr_t offset,
 				 u16 *dst)
 {
+	/* __DEBUG__ */ vmm_printf("**** %s \n",__func__);
 	u32 val = 0;
 	int ret = VMM_OK;
 
@@ -187,6 +196,7 @@ static int i2c_imx_emulator_read32(struct vmm_emudev *edev,
 				 physical_addr_t offset,
 				 u32 *dst)
 {
+	/* __DEBUG__ */ vmm_printf("**** %s \n",__func__);
 	return i2c_imx_reg_read(edev->priv, offset, dst);
 }
 
@@ -205,6 +215,8 @@ static int i2c_imx_reg_write(struct i2c_imx_state *i2c_imx,
 				u32 mask,
 			   	u32 val)
 {
+	/* __DEBUG__ */ vmm_printf("**** %s: offset=0x%08x | mask=0x%08x | val=0x%08x \n",\
+					 __func__, offset >> IMX_I2C_REGSHIFT, mask, val); /* __DEBUG__ */
 	int ret = VMM_OK; 
 
 	vmm_spin_lock(&i2c_imx->lock);
@@ -212,26 +224,54 @@ static int i2c_imx_reg_write(struct i2c_imx_state *i2c_imx,
 	switch (offset >> IMX_I2C_REGSHIFT) {
 
 		case IMX_I2C_IADR: /* i2c slave address */ 
+			/* __DEBUG__ */ vmm_printf("**** %s: Write i2c_IADR: i2c_IADR=0x%08x | val=0x%08x \n", \
+					__func__, (i2c_imx->i2c_IADR & ~mask), (val & mask & IADR_WR_MASK) ); 
 			i2c_imx->i2c_IADR = (i2c_imx->i2c_IADR & ~mask) | (val & mask & IADR_WR_MASK);
 			break;
 
 		case IMX_I2C_IFDR: /* i2c frequency divider */
+			/* __DEBUG__ */ vmm_printf("**** %s: Write i2c_IFDR: i2c_IFDR=0x%08x | val=0x%08x \n", \
+					__func__, (i2c_imx->i2c_IFDR & ~mask), (val & mask & IFDR_WR_MASK)); 
 			i2c_imx->i2c_IFDR = (i2c_imx->i2c_IFDR & ~mask) | (val & mask & IFDR_WR_MASK);
+			/* update clock */
+			i2c_imx_set_clk(i2c_imx);
 			break;
 
 		case IMX_I2C_I2CR: /* i2c control */
+			/* __DEBUG__ */ vmm_printf("**** %s: Write i2c_I2CR: i2c_I2CR=0x%08x | val=0x%08x \n", \
+					__func__, (i2c_imx->i2c_I2CR & ~mask), (val & mask & I2CR_WR_MASK)); 
 			i2c_imx->i2c_I2CR = (i2c_imx->i2c_I2CR & ~mask) | (val & mask & I2CR_WR_MASK);
+			/* IEN: if I2C enable bit is set to 0 */
+			if ( !(i2c_imx->i2c_I2CR & I2CR_IEN) )
+			{
+				/* __DEBUG__ */ vmm_printf("**** %s: Write i2c_I2CR: reset request \n", __func__);
+				i2c_imx->reset_request=1; /* TODO: faire un reset à la fin de transmission du bus,
+					 voir page 1887, car ce n'est pas très claire comme fonctionnement */
+			}
+			/* IIEN */
+			/* MSTA: _/ set start signal: master | \_ set stop signal: slave */
+			/* MTX:  0: receive | 1: transmit */
+			/* TXAK */
+			/* RSTA */
 			break;
 
 		case IMX_I2C_I2SR: /* i2c status */
+			/* __DEBUG__ */ vmm_printf("**** %s: Write i2c_I2SR: i2c_I2SR=0x%08x | val=0x%08x \n", \
+					__func__, (i2c_imx->i2c_I2SR & ~mask), (val & mask & I2SR_WR_MASK)); 
 			i2c_imx->i2c_I2SR = (i2c_imx->i2c_I2SR & ~mask) | (val & mask & I2SR_WR_MASK);
+			/* IAL */
+			/* IIF */
 			break;
 
 		case IMX_I2C_I2DR: /* i2c transfer data */
+			/* __DEBUG__ */ vmm_printf("**** %s: Write i2c_I2DR: i2c_I2DR=0x%08x | val=0x%08x \n", \
+					__func__, (i2c_imx->i2c_I2DR & ~mask), (val & mask & I2DR_WR_MASK)); 
 			i2c_imx->i2c_I2DR = (i2c_imx->i2c_I2DR & ~mask) | (val & mask & I2DR_WR_MASK);
+			/* DATA */
 			break;
 
 		default:
+			/* __DEBUG__ */ vmm_printf("**** %s: Write default: val=0x%08x \n",__func__,(val & mask)); 
 			ret = VMM_EINVALID;
 			break;
 	};
@@ -245,6 +285,7 @@ static int i2c_imx_emulator_write8(struct vmm_emudev *edev,
 				 physical_addr_t offset,
 				 u8 src)
 {
+	/* __DEBUG__ */ 	vmm_printf("**** %s \n",__func__); 
 	return i2c_imx_reg_write(edev->priv, offset, 0x000000FF, src);
 }
 
@@ -252,6 +293,7 @@ static int i2c_imx_emulator_write16(struct vmm_emudev *edev,
 				  physical_addr_t offset,
 				  u16 src)
 {
+	/* __DEBUG__ */ vmm_printf("**** %s \n",__func__);
 	return i2c_imx_reg_write(edev->priv, offset, 0x0000FFFF, src);
 }
 
@@ -259,6 +301,7 @@ static int i2c_imx_emulator_write32(struct vmm_emudev *edev,
 				  physical_addr_t offset,
 				  u32 src)
 {
+	/* __DEBUG__ */ vmm_printf("**** %s: offset=0x%08x \n",__func__, offset);
 	return i2c_imx_reg_write(edev->priv, offset, 0xFFFFFFFF, src);
 }
 
@@ -270,6 +313,7 @@ static int i2c_imx_emulator_write32(struct vmm_emudev *edev,
 
 static int i2c_imx_emulator_reset(struct vmm_emudev *edev)
 {
+	/* __DEBUG__ */ vmm_printf("**** %s \n",__func__);
 	struct i2c_imx_state *i2c_imx = edev->priv;
 
 	vmm_spin_lock(&i2c_imx->lock);
@@ -293,6 +337,7 @@ static int i2c_imx_emulator_probe(struct vmm_guest *guest,
 				struct vmm_emudev *edev,
 				const struct vmm_devtree_nodeid *eid)
 {
+	/* __DEBUG__ */ vmm_printf("**** %s \n",__func__);
 	
 	struct i2c_imx_state *i2c_imx = NULL;
 	
@@ -319,6 +364,7 @@ static int i2c_imx_emulator_probe(struct vmm_guest *guest,
 
 static int i2c_imx_emulator_remove(struct vmm_emudev *edev)
 {
+	/* __DEBUG__ */ vmm_printf("**** %s \n",__func__);
 	struct i2c_imx_state *i2c_imx = edev->priv;
 
 	vmm_free(i2c_imx);
@@ -356,11 +402,13 @@ static struct vmm_emulator i2c_imx_emulator = {
 
 static int __init i2c_imx_emulator_init(void)
 {
+	/* __DEBUG__ */ vmm_printf("**** init: i2c_imx\n");
 	return vmm_devemu_register_emulator(&i2c_imx_emulator);
 }
 
 static void __exit i2c_imx_emulator_exit(void)
 {
+	/* __DEBUG__ */ vmm_printf("**** exit: i2c_imx\n");
 	vmm_devemu_unregister_emulator(&i2c_imx_emulator);
 }
 

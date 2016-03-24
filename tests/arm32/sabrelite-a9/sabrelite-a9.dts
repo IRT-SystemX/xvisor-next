@@ -345,13 +345,13 @@
 			compatible = "zero";
 		};
 		
-		i2c {
+		i2c1: i2c@021a0000 {
 			manifest_type = "virtual";
 			address_type = "memory";
-			guest_physical_addr = <0x021a4000>;
+			guest_physical_addr = <0x021a0000>;
 			physical_size = <0x4000>;
-			device_type = "misc";
-			compatible = "zero";
+			device_type = "i2c-imx";
+			compatible = "fsl,imx6q-i2c", "fsl,imx21-i2c";
 		};
 
 		virtio-con0 {

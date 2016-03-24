@@ -339,26 +339,26 @@
 /* 	status = "okay"; */
 /* }; */
 
-/* &i2c1 { */
-/* 	clock-frequency = <100000>; */
-/* 	pinctrl-names = "default"; */
-/* 	pinctrl-0 = <&pinctrl_i2c1_1>; */
-/* 	status = "okay"; */
+ &i2c1 {
+ 	clock-frequency = <100000>;
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_i2c1_1>;
+ 	status = "okay";
 
-/* 	codec: sgtl5000@0a { */
-/* 		compatible = "fsl,sgtl5000"; */
-/* 		reg = <0x0a>; */
-/* 		clocks = <&clks 201>; */
-/* 		VDDA-supply = <&reg_2p5v>; */
-/* 		VDDIO-supply = <&reg_3p3v>; */
-/* 	}; */
-/* 	isl1208@6f { */
-/* 		compatible = "isl,isl1208"; */
-/* 		reg = <0x6f>; */
-/* 		interrupt-parent = <&gpio6>; */
-/* 		interrupts = <7 IRQ_TYPE_EDGE_FALLING>; */
-/* 	}; */
-/* }; */
+ 	/*codec: sgtl5000@0a {
+ 		compatible = "fsl,sgtl5000";
+ 		reg = <0x0a>;
+ 		clocks = <&clks 201>;
+ 		VDDA-supply = <&reg_2p5v>;
+ 		VDDIO-supply = <&reg_3p3v>;
+ 	};*/
+ 	/*isl1208@6f {
+ 		compatible = "isl,isl1208";
+ 		reg = <0x6f>;
+ 		interrupt-parent = <&gpio6>;
+ 		interrupts = <7 IRQ_TYPE_EDGE_FALLING>;
+ 	};*/
+ };
 
 /* &i2c2 { */
 /* 	clock-frequency = <100000>; */

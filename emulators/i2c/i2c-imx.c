@@ -44,11 +44,21 @@
 
 
 /***** define register ******/
+/* IMX I2C registers:
+ * the I2C register offset is different between SoCs,
+ * to provid support for all these chips, split the
+ * register offset into a fixed base address and a
+ * variable shift value, then the full register offset
+ * will be calculated by
+ * reg_off = ( reg_base_addr << reg_shift)
+ */
 #define IMX_I2C_IADR	0x00	/* i2c slave address */
 #define IMX_I2C_IFDR	0x01	/* i2c frequency divider */
 #define IMX_I2C_I2CR	0x02	/* i2c control */
 #define IMX_I2C_I2SR	0x03	/* i2c status */
 #define IMX_I2C_I2DR	0x04	/* i2c transfer data */
+
+#define IMX_I2C_REGSHIFT	2
 
 /* Bits of IMX I2C registers */
 #define I2CR_RSTA	(1 << 2)
@@ -112,7 +122,7 @@ static int i2c_imx_reg_read(struct i2c_imx_state *i2c_imx,
 
 	vmm_spin_lock(&i2c_imx->lock);
 
-	switch (offset) {
+	switch (offset >> IMX_I2C_REGSHIFT) {
 		case IMX_I2C_IADR:
 			*dst = (i2c_imx->i2c_IADR & IADR_RD_MASK);
 			break;
@@ -199,7 +209,7 @@ static int i2c_imx_reg_write(struct i2c_imx_state *i2c_imx,
 
 	vmm_spin_lock(&i2c_imx->lock);
 
-	switch (offset) {
+	switch (offset >> IMX_I2C_REGSHIFT) {
 
 		case IMX_I2C_IADR: /* i2c slave address */ 
 			i2c_imx->i2c_IADR = (i2c_imx->i2c_IADR & ~mask) | (val & mask & IADR_WR_MASK);
@@ -264,7 +274,11 @@ static int i2c_imx_emulator_reset(struct vmm_emudev *edev)
 
 	vmm_spin_lock(&i2c_imx->lock);
 
-//	DO RESET	
+	i2c_imx->i2c_IADR = 0x00000000;
+	i2c_imx->i2c_IFDR = 0x00000000;
+	i2c_imx->i2c_I2CR = 0x00000000;
+	i2c_imx->i2c_I2SR = 0x00000000;
+	i2c_imx->i2c_I2DR = 0x00000000;
 
 	vmm_spin_unlock(&i2c_imx->lock);
 

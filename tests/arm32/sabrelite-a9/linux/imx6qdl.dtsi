@@ -892,15 +892,15 @@
 			 	status = "disabled";
 			 };
 
-			/* i2c2: i2c@021a4000 { */
-			/* 	#address-cells = <1>; */
-			/* 	#size-cells = <0>; */
-			/* 	compatible = "fsl,imx6q-i2c", "fsl,imx21-i2c"; */
-			/* 	reg = <0x021a4000 0x4000>; */
-			/* 	interrupts = <0 37 0x04>; */
-			/* 	clocks = <&clks 126>; */
-			/* 	status = "disabled"; */
-			/* }; */
+			i2c2: i2c@021a4000 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				compatible = "fsl,imx6q-i2c", "fsl,imx21-i2c";
+				reg = <0x021a4000 0x4000>;
+				interrupts = <0 37 0x04>;
+				clocks = <&clks 126>;
+				status = "disabled";
+			};
 
 			/* i2c3: i2c@021a8000 { */
 			/* 	#address-cells = <1>; */

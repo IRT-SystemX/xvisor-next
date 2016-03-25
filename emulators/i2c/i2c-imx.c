@@ -78,7 +78,7 @@
 
 /* mask write */
 #define IADR_WR_MASK	0xFE			/* 0000 0000 1111 1110 */
-#define IFDR_WR_MASK	0x63			/* 0000 0000 0011 1111 */
+#define IFDR_WR_MASK	0x3F			/* 0000 0000 0011 1111 */
 #define I2CR_WR_MASK	( I2CR_RSTA | I2CR_TXAK | I2CR_MTX | I2CR_MSTA | \
 			I2CR_IIEN | I2CR_IEN )	/* 0000 0000 1111 1100 */
 #define I2SR_WR_MASK	( I2SR_IIF | I2SR_IAL )	/* 0000 0000 0001 0010 */
@@ -235,12 +235,22 @@ static int i2c_imx_reg_write(struct i2c_imx_state *i2c_imx,
 			i2c_imx->i2c_IFDR = (i2c_imx->i2c_IFDR & ~mask) | (val & mask & IFDR_WR_MASK);
 			/* update clock */
 			i2c_imx_set_clk(i2c_imx);
+			/* start */
+			i2c_imx->i2c_I2SR |= I2SR_IBB; //set busy when start
+			/* __DEBUG__ */ vmm_printf("**** %s: Start: i2c_I2SR=0x%08x \n", \
+					__func__, i2c_imx->i2c_I2SR);
 			break;
 
 		case IMX_I2C_I2CR: /* i2c control */
 			/* __DEBUG__ */ vmm_printf("**** %s: Write i2c_I2CR: i2c_I2CR=0x%08x | val=0x%08x \n", \
 					__func__, (i2c_imx->i2c_I2CR & ~mask), (val & mask & I2CR_WR_MASK)); 
 			i2c_imx->i2c_I2CR = (i2c_imx->i2c_I2CR & ~mask) | (val & mask & I2CR_WR_MASK);
+			if(i2c_imx->i2c_I2CR & (I2CR_IIEN | I2CR_MTX | I2CR_TXAK))
+			{
+				i2c_imx->i2c_I2SR &= ~I2SR_IBB;
+			}
+			/* __DEBUG__ */ vmm_printf("**** %s: Start: i2c_I2SR=0x%08x \n", \
+					__func__, i2c_imx->i2c_I2SR);
 			/* IEN: if I2C enable bit is set to 0 */
 			if ( !(i2c_imx->i2c_I2CR & I2CR_IEN) )
 			{
@@ -258,7 +268,9 @@ static int i2c_imx_reg_write(struct i2c_imx_state *i2c_imx,
 		case IMX_I2C_I2SR: /* i2c status */
 			/* __DEBUG__ */ vmm_printf("**** %s: Write i2c_I2SR: i2c_I2SR=0x%08x | val=0x%08x \n", \
 					__func__, (i2c_imx->i2c_I2SR & ~mask), (val & mask & I2SR_WR_MASK)); 
-			i2c_imx->i2c_I2SR = (i2c_imx->i2c_I2SR & ~mask) | (val & mask & I2SR_WR_MASK);
+			i2c_imx->i2c_I2SR = (i2c_imx->i2c_I2SR & (~mask | ~I2SR_WR_MASK) ) | (val & mask & I2SR_WR_MASK);
+			/* __DEBUG__ */ vmm_printf("**** %s: i2c_I2SR=0x%08x\n", \
+					__func__, i2c_imx->i2c_I2SR); 
 			/* IAL */
 			/* IIF */
 			break;

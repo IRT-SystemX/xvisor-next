@@ -97,6 +97,8 @@ struct i2c_imx_state {
 	struct vmm_guest *guest;
 	struct vmm_emudev *edev;
 	vmm_spinlock_t lock;
+	u32 irq;
+	int irq_level;
 
 	u32 i2c_IADR;	/* i2c slave address */ 	//u16
 	u32 i2c_IFDR;	/* i2c frequency divider */	//u16
@@ -122,6 +124,9 @@ static int i2c_imx_reg_read(struct i2c_imx_state *i2c_imx,
 	int ret = VMM_OK;
 
 	vmm_spin_lock(&i2c_imx->lock);
+
+	/* lower the interrupt level */
+	vmm_devemu_emulate_irq(i2c_imx->guest, i2c_imx->irq, 0);
 
 	switch (offset >> IMX_I2C_REGSHIFT) {
 		case IMX_I2C_IADR:
@@ -220,6 +225,9 @@ static int i2c_imx_reg_write(struct i2c_imx_state *i2c_imx,
 	int ret = VMM_OK; 
 
 	vmm_spin_lock(&i2c_imx->lock);
+	/* lower the interrupt level */
+	vmm_devemu_emulate_irq(i2c_imx->guest, i2c_imx->irq, 0);
+
 
 	switch (offset >> IMX_I2C_REGSHIFT) {
 
@@ -259,6 +267,18 @@ static int i2c_imx_reg_write(struct i2c_imx_state *i2c_imx,
 					 voir page 1887, car ce n'est pas très claire comme fonctionnement */
 			}
 			/* IIEN */
+			if ( (i2c_imx->i2c_I2CR & I2CR_IIEN) )
+			{
+				/* Enabling IRQ */
+				i2c_imx->irq_level = 1;
+				vmm_devemu_emulate_irq(i2c_imx->guest, i2c_imx->irq, 0); // lower the interrupt level
+			}
+			else
+			{
+				/* Disabling IRQ */
+				i2c_imx->irq_level = 0;
+				vmm_devemu_emulate_irq(i2c_imx->guest, i2c_imx->irq, 0); // lower the interrupt level
+			}
 			/* MSTA: _/ set start signal: master | \_ set stop signal: slave */
 			/* MTX:  0: receive | 1: transmit */
 			/* TXAK */
@@ -280,6 +300,13 @@ static int i2c_imx_reg_write(struct i2c_imx_state *i2c_imx,
 					__func__, (i2c_imx->i2c_I2DR & ~mask), (val & mask & I2DR_WR_MASK)); 
 			i2c_imx->i2c_I2DR = (i2c_imx->i2c_I2DR & ~mask) | (val & mask & I2DR_WR_MASK);
 			/* DATA */
+			/* Set IRQ */
+			if (i2c_imx->irq_level)
+			{
+				i2c_imx->i2c_I2SR |= I2SR_IIF;
+				/* __DEBUG__ */ vmm_printf("**** %s: IIF: i2c_I2SR=0x%08x \n",__func__,i2c_imx->i2c_I2SR);
+				vmm_devemu_emulate_irq(i2c_imx->guest, i2c_imx->irq, 1);
+			}
 			break;
 
 		default:
@@ -351,6 +378,7 @@ static int i2c_imx_emulator_probe(struct vmm_guest *guest,
 {
 	/* __DEBUG__ */ vmm_printf("**** %s \n",__func__);
 	
+	int rc;
 	struct i2c_imx_state *i2c_imx = NULL;
 	
 	// init i2c_imx_state
@@ -368,6 +396,15 @@ static int i2c_imx_emulator_probe(struct vmm_guest *guest,
 	i2c_imx->i2c_I2SR = 0x00000000; // 0-2: multy | 3:reserved | 4-7: miultiple value | 8-15: reserved   (ICF,IAAS,IBB,SRW,RXAK ro)
 	i2c_imx->i2c_I2DR = 0x00000000; // 0-7: data | 8-15:reserved
 	
+
+	/* init irq */
+	rc = vmm_devtree_irq_get(edev->node, &i2c_imx->irq, 0);
+	if (rc) {
+		vmm_free(i2c_imx);
+		return rc;
+	}
+	i2c_imx->irq_level = 0;
+
 	INIT_SPIN_LOCK(&i2c_imx->lock);
 	edev->priv = i2c_imx;
 

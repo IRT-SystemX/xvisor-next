@@ -352,6 +352,7 @@
 			physical_size = <0x4000>;
 			device_type = "i2c-imx";
 			compatible = "fsl,imx6q-i2c", "fsl,imx21-i2c";
+			interrupts = <68>; /* TODO wich value */
 		};
 
 		i2c2: i2c@021a4000 {
@@ -361,6 +362,7 @@
 			physical_size = <0x4000>;
 			device_type = "i2c-imx";
 			compatible = "fsl,imx6q-i2c", "fsl,imx21-i2c";
+			interrupts = <69>; /* TODO wich value */
 		};
 
 		i2c3: i2c@021a8000 {
@@ -370,6 +372,7 @@
 			physical_size = <0x4000>;
 			device_type = "i2c-imx";
 			compatible = "fsl,imx6q-i2c", "fsl,imx21-i2c";
+			interrupts = <70>; /* TODO wich value */
 		};
 
 		virtio-con0 {

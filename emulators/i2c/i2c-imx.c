@@ -257,9 +257,14 @@ static int i2c_imx_reg_write(struct i2c_imx_state *i2c_imx,
 			if ( !(i2c_imx->i2c_I2CR & I2CR_IEN) )
 			{
 				/* __DEBUG__ */ vmm_printf("**** %s: Write i2c_I2CR: reset request \n", __func__);
-				i2c_imx->reset_request=1; /* TODO: faire un reset à la fin de transmission du bus,
-					 voir page 1887, car ce n'est pas très claire comme fonctionnement */
+				i2c_imx->i2c_I2CR = 0x00000000;
+				i2c_imx->i2c_I2SR = 0x00000000;
+				i2c_imx->i2c_I2DR = 0x00000000;
+	
+				i2c_imx->irq_level = 0;
+				vmm_devemu_emulate_irq(i2c_imx->guest, i2c_imx->irq, 0);
 			}
+
 			/* IIEN */
 			if ( (i2c_imx->i2c_I2CR & I2CR_IIEN) )
 			{

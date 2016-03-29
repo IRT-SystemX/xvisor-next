@@ -357,11 +357,14 @@ static int i2c_imx_emulator_reset(struct vmm_emudev *edev)
 
 	vmm_spin_lock(&i2c_imx->lock);
 
-	i2c_imx->i2c_IADR = 0x00000000;
-	i2c_imx->i2c_IFDR = 0x00000000;
+	//i2c_imx->i2c_IADR = 0x00000000;
+	//i2c_imx->i2c_IFDR = 0x00000000;
 	i2c_imx->i2c_I2CR = 0x00000000;
 	i2c_imx->i2c_I2SR = 0x00000000;
 	i2c_imx->i2c_I2DR = 0x00000000;
+	
+	i2c_imx->irq_level = 0;
+	vmm_devemu_emulate_irq(i2c_imx->guest, i2c_imx->irq, 0);
 
 	vmm_spin_unlock(&i2c_imx->lock);
 

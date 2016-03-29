@@ -120,7 +120,6 @@ static int i2c_imx_reg_read(struct i2c_imx_state *i2c_imx,
 			  u32 offset,
 			  u32 *dst)
 {
-	/* __DEBUG__ */ vmm_printf("**** %s: offset= 0x%08x \n", __func__, offset >> IMX_I2C_REGSHIFT);
 	int ret = VMM_OK;
 
 	vmm_spin_lock(&i2c_imx->lock);
@@ -169,7 +168,6 @@ static int i2c_imx_emulator_read8(struct vmm_emudev *edev,
 				physical_addr_t offset,
 				u8 *dst)
 {
-	/* __DEBUG__ */ vmm_printf("**** %s \n",__func__);
 	u32 val = 0;
 	int ret = VMM_OK;
 
@@ -185,7 +183,6 @@ static int i2c_imx_emulator_read16(struct vmm_emudev *edev,
 				 physical_addr_t offset,
 				 u16 *dst)
 {
-	/* __DEBUG__ */ vmm_printf("**** %s \n",__func__);
 	u32 val = 0;
 	int ret = VMM_OK;
 
@@ -201,7 +198,6 @@ static int i2c_imx_emulator_read32(struct vmm_emudev *edev,
 				 physical_addr_t offset,
 				 u32 *dst)
 {
-	/* __DEBUG__ */ vmm_printf("**** %s \n",__func__);
 	return i2c_imx_reg_read(edev->priv, offset, dst);
 }
 
@@ -220,8 +216,6 @@ static int i2c_imx_reg_write(struct i2c_imx_state *i2c_imx,
 				u32 mask,
 			   	u32 val)
 {
-	/* __DEBUG__ */ vmm_printf("**** %s: offset=0x%08x | mask=0x%08x | val=0x%08x \n",\
-					 __func__, offset >> IMX_I2C_REGSHIFT, mask, val); /* __DEBUG__ */
 	int ret = VMM_OK; 
 
 	vmm_spin_lock(&i2c_imx->lock);
@@ -324,7 +318,6 @@ static int i2c_imx_emulator_write8(struct vmm_emudev *edev,
 				 physical_addr_t offset,
 				 u8 src)
 {
-	/* __DEBUG__ */ 	vmm_printf("**** %s \n",__func__); 
 	return i2c_imx_reg_write(edev->priv, offset, 0x000000FF, src);
 }
 
@@ -332,7 +325,6 @@ static int i2c_imx_emulator_write16(struct vmm_emudev *edev,
 				  physical_addr_t offset,
 				  u16 src)
 {
-	/* __DEBUG__ */ vmm_printf("**** %s \n",__func__);
 	return i2c_imx_reg_write(edev->priv, offset, 0x0000FFFF, src);
 }
 
@@ -340,7 +332,6 @@ static int i2c_imx_emulator_write32(struct vmm_emudev *edev,
 				  physical_addr_t offset,
 				  u32 src)
 {
-	/* __DEBUG__ */ vmm_printf("**** %s: offset=0x%08x \n",__func__, offset);
 	return i2c_imx_reg_write(edev->priv, offset, 0xFFFFFFFF, src);
 }
 

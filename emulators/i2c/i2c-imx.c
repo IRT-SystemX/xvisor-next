@@ -44,14 +44,6 @@
 
 
 /***** define register ******/
-/* IMX I2C registers:
- * the I2C register offset is different between SoCs,
- * to provid support for all these chips, split the
- * register offset into a fixed base address and a
- * variable shift value, then the full register offset
- * will be calculated by
- * reg_off = ( reg_base_addr << reg_shift)
- */
 #define IMX_I2C_IADR	0x00	/* i2c slave address */
 #define IMX_I2C_IFDR	0x01	/* i2c frequency divider */
 #define IMX_I2C_I2CR	0x02	/* i2c control */
@@ -100,8 +92,8 @@ struct i2c_imx_state {
 	u32 irq;
 	int irq_level;
 
-	u32 i2c_IADR;	/* i2c slave address */ 	//u16
-	u32 i2c_IFDR;	/* i2c frequency divider */	//u16
+	u32 i2c_IADR;	/* i2c slave address */
+	u32 i2c_IFDR;	/* i2c frequency divider */
 	u32 i2c_I2CR;	/* i2c control */
 	u32 i2c_I2SR;	/* i2c status */
 	u32 i2c_I2DR;	/* i2c transfer data */
@@ -233,25 +225,30 @@ static int i2c_imx_reg_write(struct i2c_imx_state *i2c_imx,
 
 		case IMX_I2C_IADR: /* i2c slave address */ 
 			/* __DEBUG__ */ vmm_printf("**** %s: Write i2c_IADR: i2c_IADR=0x%08x | val=0x%08x \n", \
-					__func__, (i2c_imx->i2c_IADR & ~mask), (val & mask & IADR_WR_MASK) ); 
+					__func__, i2c_imx->i2c_IADR, (val & mask & IADR_WR_MASK) );
 			i2c_imx->i2c_IADR = (i2c_imx->i2c_IADR & ~mask) | (val & mask & IADR_WR_MASK);
 			break;
 
 		case IMX_I2C_IFDR: /* i2c frequency divider */
 			/* __DEBUG__ */ vmm_printf("**** %s: Write i2c_IFDR: i2c_IFDR=0x%08x | val=0x%08x \n", \
-					__func__, (i2c_imx->i2c_IFDR & ~mask), (val & mask & IFDR_WR_MASK)); 
+					__func__, i2c_imx->i2c_IFDR, (val & mask & IFDR_WR_MASK));
 			i2c_imx->i2c_IFDR = (i2c_imx->i2c_IFDR & ~mask) | (val & mask & IFDR_WR_MASK);
 
-			/* start */
-			i2c_imx->i2c_I2SR |= I2SR_IBB; //set busy when start
+			/* Start */
+			i2c_imx->i2c_I2SR |= I2SR_IBB;
 			/* __DEBUG__ */ vmm_printf("**** %s: Start: i2c_I2SR=0x%08x \n", \
 					__func__, i2c_imx->i2c_I2SR);
 			break;
 
 		case IMX_I2C_I2CR: /* i2c control */
 			/* __DEBUG__ */ vmm_printf("**** %s: Write i2c_I2CR: i2c_I2CR=0x%08x | val=0x%08x \n", \
-					__func__, (i2c_imx->i2c_I2CR & ~mask), (val & mask & I2CR_WR_MASK)); 
+					__func__, i2c_imx->i2c_I2CR, (val & mask & I2CR_WR_MASK));
 			i2c_imx->i2c_I2CR = (i2c_imx->i2c_I2CR & ~mask) | (val & mask & I2CR_WR_MASK);
+
+			/* __DEBUG__ */
+			if (i2c_imx->i2c_I2CR & I2CR_MSTA) vmm_printf("**** %s: Write i2c_I2CR: Master mode \n", __func__);
+			else vmm_printf("**** %s: Write i2c_I2CR: Slave mode \n", __func__);
+
 			/* IEN: if I2C enable bit is set to 0 */
 			if ( !(i2c_imx->i2c_I2CR & I2CR_IEN) )
 			{
@@ -310,17 +307,17 @@ static int i2c_imx_reg_write(struct i2c_imx_state *i2c_imx,
 
 		case IMX_I2C_I2SR: /* i2c status */
 			/* __DEBUG__ */ vmm_printf("**** %s: Write i2c_I2SR: i2c_I2SR=0x%08x | val=0x%08x \n", \
-					__func__, (i2c_imx->i2c_I2SR & ~mask), (val & mask & I2SR_WR_MASK)); 
+					__func__, i2c_imx->i2c_I2SR, (val & mask & I2SR_WR_MASK));
 			i2c_imx->i2c_I2SR = (i2c_imx->i2c_I2SR & (~mask | ~I2SR_WR_MASK) ) | (val & mask & I2SR_WR_MASK);
 			/* __DEBUG__ */ vmm_printf("**** %s: i2c_I2SR=0x%08x\n", \
-					__func__, i2c_imx->i2c_I2SR); 
+					__func__, i2c_imx->i2c_I2SR);
 			/* IAL */
 			/* IIF */
 			break;
 
 		case IMX_I2C_I2DR: /* i2c transfer data */
 			/* __DEBUG__ */ vmm_printf("**** %s: Write i2c_I2DR: i2c_I2DR=0x%08x | val=0x%08x \n", \
-					__func__, (i2c_imx->i2c_I2DR & ~mask), (val & mask & I2DR_WR_MASK)); 
+					__func__, i2c_imx->i2c_I2DR, (val & mask & I2DR_WR_MASK));
 			i2c_imx->i2c_I2DR = (i2c_imx->i2c_I2DR & ~mask) | (val & mask & I2DR_WR_MASK);
 
 			/* Recept slave addr */
@@ -424,20 +421,20 @@ static int i2c_imx_emulator_probe(struct vmm_guest *guest,
 	struct i2c_imx_state *i2c_imx = NULL;
 	
 	// init i2c_imx_state
+	/* allocated structure */
 	i2c_imx = vmm_zalloc(sizeof(struct i2c_imx_state));
 	if (!i2c_imx) {
 		return VMM_EFAIL;
 	}
 
 	i2c_imx->edev = edev;
-
 	i2c_imx->guest = guest;
-	i2c_imx->i2c_IADR = 0x00000000; // 0: reserved | 1-7: slace addr | 8-15: reserved
-	i2c_imx->i2c_IFDR = 0x00000000; // 0-5: IC | 6-15: reserved
-	i2c_imx->i2c_I2CR = 0x00000000; // 0-1: reserved | 2-7: multiple value | 8-15:reserved  (rsta: wo)
-	i2c_imx->i2c_I2SR = 0x00000000; // 0-2: multy | 3:reserved | 4-7: miultiple value | 8-15: reserved   (ICF,IAAS,IBB,SRW,RXAK ro)
-	i2c_imx->i2c_I2DR = 0x00000000; // 0-7: data | 8-15:reserved
-	
+
+	i2c_imx->i2c_IADR = 0x00000000;
+	i2c_imx->i2c_IFDR = 0x00000000;
+	i2c_imx->i2c_I2CR = 0x00000000;
+	i2c_imx->i2c_I2SR = 0x00000000;
+	i2c_imx->i2c_I2DR = 0x00000000;
 
 	slave_addr_request = false;
 	slave_addr = 0x00000000;

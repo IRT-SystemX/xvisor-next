@@ -403,8 +403,6 @@ static int i2c_imx_emulator_reset(struct vmm_emudev *edev)
 
 	vmm_spin_lock(&i2c_imx->lock);
 
-	//i2c_imx->i2c_IADR = 0x00000000;
-	//i2c_imx->i2c_IFDR = 0x00000000;
 	i2c_imx->i2c_I2CR = 0x00000000;
 	i2c_imx->i2c_I2SR = 0x00000000;
 	i2c_imx->i2c_I2DR = 0x00000000;
@@ -426,6 +424,7 @@ static int i2c_imx_emulator_reset(struct vmm_emudev *edev)
 /*************************************************/
 /****************** PROB REMOVE ******************/
 /*************************************************/
+
 static int i2c_imx_emulator_probe(struct vmm_guest *guest,
 				struct vmm_emudev *edev,
 				const struct vmm_devtree_nodeid *eid)
@@ -434,8 +433,7 @@ static int i2c_imx_emulator_probe(struct vmm_guest *guest,
 	
 	int rc;
 	struct i2c_imx_state *i2c_imx = NULL;
-	
-	// init i2c_imx_state
+
 	/* allocated structure */
 	i2c_imx = vmm_zalloc(sizeof(struct i2c_imx_state));
 	if (!i2c_imx) {
@@ -465,6 +463,7 @@ static int i2c_imx_emulator_probe(struct vmm_guest *guest,
 	i2c_imx->irq_level = 0;
 
 	INIT_SPIN_LOCK(&i2c_imx->lock);
+
 	edev->priv = i2c_imx;
 
 	return VMM_OK;

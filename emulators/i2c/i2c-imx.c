@@ -270,10 +270,10 @@ static int i2c_imx_reg_write(struct i2c_imx_state *i2c_imx,
 				i2c_imx->i2c_I2SR = 0x00000000;
 				i2c_imx->i2c_I2DR = 0x00000000;
 
-				slave_addr_request = false;
-				slave_addr = 0x00000000;
-				data_request = false;
-				data = 0x00000000;
+				i2c_imx->slave_addr_request = false;
+				i2c_imx->slave_addr = 0x00000000;
+				i2c_imx->data_request = false;
+				i2c_imx->data = 0x00000000;
 
 				i2c_imx->irq_level = 0;
 				vmm_devemu_emulate_irq(i2c_imx->guest, i2c_imx->irq, 0);
@@ -407,10 +407,10 @@ static int i2c_imx_emulator_reset(struct vmm_emudev *edev)
 	i2c_imx->i2c_I2SR = 0x00000000;
 	i2c_imx->i2c_I2DR = 0x00000000;
 
-	slave_addr_request = false;
-	slave_addr = 0x00000000;
-	data_request = false;
-	data = 0x00000000;
+	i2c_imx->slave_addr_request = false;
+	i2c_imx->slave_addr = 0x00000000;
+	i2c_imx->data_request = false;
+	i2c_imx->data = 0x00000000;
 
 	i2c_imx->irq_level = 0;
 	vmm_devemu_emulate_irq(i2c_imx->guest, i2c_imx->irq, 0);
@@ -449,10 +449,10 @@ static int i2c_imx_emulator_probe(struct vmm_guest *guest,
 	i2c_imx->i2c_I2SR = 0x00000000;
 	i2c_imx->i2c_I2DR = 0x00000000;
 
-	slave_addr_request = false;
-	slave_addr = 0x00000000;
-	data_request = false;
-	data = 0x00000000;
+	i2c_imx->slave_addr_request = false;
+	i2c_imx->slave_addr = 0x00000000;
+	i2c_imx->data_request = false;
+	i2c_imx->data = 0x00000000;
 
 	/* init irq */
 	rc = vmm_devtree_irq_get(edev->node, &i2c_imx->irq, 0);

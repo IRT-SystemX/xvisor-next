@@ -1775,8 +1775,9 @@ struct pinctrl_dev *pinctrl_register(struct pinctrl_desc *pctldesc,
 		pctldev->hog_sleep =
 			pinctrl_lookup_state(pctldev->p,
 						    PINCTRL_STATE_SLEEP);
-		if (IS_ERR(pctldev->hog_sleep))
+		if (IS_ERR(pctldev->hog_sleep)) {
 			dev_dbg(dev, "failed to lookup the sleep state\n");
+                }
 	}
 
 #if 0

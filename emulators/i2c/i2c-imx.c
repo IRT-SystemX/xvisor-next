@@ -129,6 +129,7 @@ static int i2c_imx_reg_read(struct i2c_imx_state *i2c_imx,
 		case IMX_I2C_IADR:
 			*dst = (i2c_imx->i2c_IADR & IADR_RD_MASK);
 			/* __DEBUG__ */ vmm_printf("**** %s: Read i2c_IADR: 0x%08x \n",__func__, *dst);
+
 			break;
 	
 		case IMX_I2C_IFDR:
@@ -139,6 +140,7 @@ static int i2c_imx_reg_read(struct i2c_imx_state *i2c_imx,
 		case IMX_I2C_I2CR:
 			*dst = (i2c_imx->i2c_I2CR & I2CR_RD_MASK);
 			/* __DEBUG__ */ vmm_printf("**** %s: Read i2c_I2CR: 0x%08x \n",__func__, *dst);
+
 			break;
 
 		case IMX_I2C_I2SR:
@@ -147,6 +149,17 @@ static int i2c_imx_reg_read(struct i2c_imx_state *i2c_imx,
 			break;
 
 		case IMX_I2C_I2DR:
+			/* Set IRQ */
+			if (i2c_imx->irq_level)
+			{
+				i2c_imx->i2c_I2SR |= I2SR_IIF;
+				/* __DEBUG__ */ vmm_printf("**** %s: IIF: i2c_I2SR=0x%08x \n",__func__,i2c_imx->i2c_I2SR);
+				vmm_devemu_emulate_irq(i2c_imx->guest, i2c_imx->irq, 1);
+			}
+			else
+			{
+				i2c_imx->i2c_I2SR |= I2SR_IIF;
+			}
 			*dst = (i2c_imx->i2c_I2DR & I2DR_RD_MASK);
 			/* __DEBUG__ */ vmm_printf("**** %s: Read i2c_I2DR: 0x%08x \n",__func__, *dst);
 			break;	
@@ -217,9 +230,9 @@ static int i2c_imx_reg_write(struct i2c_imx_state *i2c_imx,
 	int ret = VMM_OK; 
 
 	vmm_spin_lock(&i2c_imx->lock);
+
 	/* lower the interrupt level */
 	vmm_devemu_emulate_irq(i2c_imx->guest, i2c_imx->irq, 0);
-
 
 	switch (offset >> IMX_I2C_REGSHIFT) {
 
@@ -271,13 +284,11 @@ static int i2c_imx_reg_write(struct i2c_imx_state *i2c_imx,
 			{
 				/* Enabling IRQ */
 				i2c_imx->irq_level = 1;
-				vmm_devemu_emulate_irq(i2c_imx->guest, i2c_imx->irq, 0); // lower the interrupt level
 			}
 			else
 			{
 				/* Disabling IRQ */
 				i2c_imx->irq_level = 0;
-				vmm_devemu_emulate_irq(i2c_imx->guest, i2c_imx->irq, 0); // lower the interrupt level
 			}
 
 			/* End of start */
@@ -340,6 +351,10 @@ static int i2c_imx_reg_write(struct i2c_imx_state *i2c_imx,
 				i2c_imx->i2c_I2SR |= I2SR_IIF;
 				/* __DEBUG__ */ vmm_printf("**** %s: IIF: i2c_I2SR=0x%08x \n",__func__,i2c_imx->i2c_I2SR);
 				vmm_devemu_emulate_irq(i2c_imx->guest, i2c_imx->irq, 1);
+			}
+			else
+			{
+				i2c_imx->i2c_I2SR |= I2SR_IIF;
 			}
 			break;
 
@@ -470,6 +485,7 @@ static int i2c_imx_emulator_remove(struct vmm_emudev *edev)
 /*************************************************/
 /******************* INIT EXIT *******************/
 /*************************************************/
+
 static struct vmm_devtree_nodeid i2c_imx_emuid_table[] = {
 	{
 		.type = "i2c-imx",

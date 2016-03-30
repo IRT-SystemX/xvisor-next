@@ -107,6 +107,43 @@ targets-y+=$(build_dir)/vmm.elf
 targets-y+=$(build_dir)/vmm.bin
 targets-y+=$(build_dir)/system.map
 
+# Enable minimal warnings
+toolchain_warnings := -Wall
+
+# Extra warnings, not included in -Wall/-Wextra but nice to have.
+toolchain_warnings += -Wstrict-prototypes
+toolchain_warnings += -Wlogical-op
+toolchain_warnings += -Wfloat-equal
+toolchain_warnings += -Winit-self
+
+# Profiling helpers. Enable this to optimize functions.
+#toolchain_warnings += -Wsuggest-attribute=pure
+#toolchain_warnings += -Wsuggest-attribute=const
+#toolchain_warnings += -Wsuggest-attribute=noreturn
+#toolchain_warnings += -Wmissing-format-attribute
+
+# -Wextra is too tough for now. Some warnings that cause huge spam
+# and little interest have been disabled below. Would be nice to have
+# them around some day.
+toolchain_warnings += -Wextra
+toolchain_warnings += -Wno-missing-field-initializers
+toolchain_warnings += -Wno-unused-parameter
+toolchain_warnings += -Wno-sign-compare
+
+# Some of them below are VERY tough
+#toolchain_warnings += -Wshadow
+#toolchain_warnings += -Winline
+#toolchain_warnings += -Wmissing-declarations
+#toolchain_warnings += -Wswitch-default
+#toolchain_warnings += -Wpointer-arith
+#toolchain_warnings += -Wswitch-enum
+#toolchain_warnings += -Wcast-qual
+#toolchain_warnings += -Wpacked
+#toolchain_warnings += -Wpadded
+#toolchain_warnings += -Wcast-align
+#toolchain_warnings += -Wconversion
+#toolchain_warnings += -Wundef
+
 # Setup compilation environment
 cpp=$(CROSS_COMPILE)cpp
 cppflags=-include $(OPENCONF_TMPDIR)/$(OPENCONF_AUTOHEADER)
@@ -129,7 +166,7 @@ cppflags+=$(cpu-cppflags)
 cppflags+=$(board-cppflags)
 cppflags+=$(libs-cppflags-y)
 cc=$(CROSS_COMPILE)gcc
-cflags=-g -Wall -nostdlib --sysroot=$(drivers_dir)/include -fno-builtin -D__VMM__
+cflags=-g $(toolchain_warnings) -nostdlib --sysroot=$(drivers_dir)/include -fno-builtin -D__VMM__
 cflags+=$(board-cflags) 
 cflags+=$(cpu-cflags) 
 cflags+=$(libs-cflags-y) 
@@ -138,7 +175,7 @@ ifdef CONFIG_PROFILE
 cflags+=-finstrument-functions
 endif
 as=$(CROSS_COMPILE)gcc
-asflags=-g -Wall -nostdlib -D__ASSEMBLY__ 
+asflags=-g $(toolchain_warnings) -nostdlib -D__ASSEMBLY__
 asflags+=$(board-asflags) 
 asflags+=$(cpu-asflags) 
 asflags+=$(libs-asflags-y) 
@@ -146,7 +183,7 @@ asflags+=$(cppflags)
 ar=$(CROSS_COMPILE)ar
 arflags=rcs
 ld=$(CROSS_COMPILE)gcc
-ldflags=-g -Wall -nostdlib -Wl,--build-id=none
+ldflags=-g $(toolchain_warnings) -nostdlib -Wl,--build-id=none
 ldflags+=$(board-ldflags) 
 ldflags+=$(cpu-ldflags) 
 ldflags+=$(libs-ldflags-y) 

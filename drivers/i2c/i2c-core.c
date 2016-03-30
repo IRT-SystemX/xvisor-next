@@ -1690,10 +1690,11 @@ int __i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
 	if (static_key_false(&i2c_trace_msg)) {
 		int i;
 		for (i = 0; i < num; i++)
-			if (msgs[i].flags & I2C_M_RD)
+			if (msgs[i].flags & I2C_M_RD) {
 				trace_i2c_read(adap, &msgs[i], i);
-			else
+                        } else {
 				trace_i2c_write(adap, &msgs[i], i);
+                        }
 	}
 
 	/* Retry automatically on arbitration loss */
@@ -1709,8 +1710,9 @@ int __i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
 	if (static_key_false(&i2c_trace_msg)) {
 		int i;
 		for (i = 0; i < ret; i++)
-			if (msgs[i].flags & I2C_M_RD)
+			if (msgs[i].flags & I2C_M_RD) {
 				trace_i2c_reply(adap, &msgs[i], i);
+                        }
 		trace_i2c_result(adap, i, ret);
 	}
 
@@ -2058,8 +2060,9 @@ EXPORT_SYMBOL(i2c_get_adapter);
 
 void i2c_put_adapter(struct i2c_adapter *adap)
 {
-	if (adap)
+	if (adap) {
 		module_put(adap->owner);
+        }
 }
 EXPORT_SYMBOL(i2c_put_adapter);
 

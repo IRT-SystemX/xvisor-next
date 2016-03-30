@@ -504,6 +504,7 @@ static int __init gic_devtree_init(struct vmm_devtree_node *node,
 		return VMM_ENODEV;
 	}
 
+
 	rc = vmm_devtree_request_regmap(node, &dist_base, 0, "GIC Dist");
 	WARN(rc, "unable to map gic dist registers\n");
 

@@ -551,7 +551,7 @@ static int sp804_emulator_reset(struct vmm_emudev *edev)
 	struct sp804_state *s = edev->priv;
 
 	if (!(rc = sp804_timer_reset(&s->t[0])) &&
-	    !(rc = sp804_timer_reset(&s->t[1])));
+	    !(rc = sp804_timer_reset(&s->t[1]))) {}
 	return rc;
 }
 

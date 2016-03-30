@@ -818,13 +818,15 @@ int gpiod_request(struct gpio_desc *desc, const char *label)
 
 	if (try_module_get(chip->owner)) {
 		status = __gpiod_request(desc, label);
-		if (status < 0)
+		if (status < 0) {
 			module_put(chip->owner);
+                }
 	}
 
 done:
-	if (status)
+	if (status) {
 		gpiod_dbg(desc, "%s: status %d\n", __func__, status);
+        }
 
 	return status;
 }

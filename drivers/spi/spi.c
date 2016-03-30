@@ -308,11 +308,12 @@ int spi_add_device(struct spi_device *spi)
 
 	/* Device may be bound to an active driver when this returns */
 	status = device_add(&spi->dev);
-	if (status < 0)
+	if (status < 0) {
 		dev_err(dev, "can't add %s, status %d\n",
 				dev_name(&spi->dev), status);
-	else
+        } else {
 		dev_dbg(dev, "registered child %s\n", dev_name(&spi->dev));
+        }
 
 done:
 	mutex_unlock(&spi_add_lock);

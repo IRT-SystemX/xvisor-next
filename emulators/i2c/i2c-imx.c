@@ -105,6 +105,9 @@ struct i2c_imx_state {
 	u32 i2c_I2CR;	/* i2c control */
 	u32 i2c_I2SR;	/* i2c status */
 	u32 i2c_I2DR;	/* i2c transfer data */
+
+	bool slave_addr_request;
+	u32 slave_addr;
 };
 
 
@@ -253,7 +256,9 @@ static int i2c_imx_reg_write(struct i2c_imx_state *i2c_imx,
 				i2c_imx->i2c_I2CR = 0x00000000;
 				i2c_imx->i2c_I2SR = 0x00000000;
 				i2c_imx->i2c_I2DR = 0x00000000;
-	
+
+				slave_addr_request = false;
+				slave_addr = 0x00000000;
 				i2c_imx->irq_level = 0;
 				vmm_devemu_emulate_irq(i2c_imx->guest, i2c_imx->irq, 0);
 			}
@@ -272,20 +277,22 @@ static int i2c_imx_reg_write(struct i2c_imx_state *i2c_imx,
 				vmm_devemu_emulate_irq(i2c_imx->guest, i2c_imx->irq, 0); // lower the interrupt level
 			}
 
-			/* repeat start */
-			if(i2c_imx->i2c_I2CR & I2CR_RSTA)
+			/* End of start */
+			if( (i2c_imx->i2c_I2CR & (I2CR_IIEN | I2CR_MTX | I2CR_TXAK)) && (i2c_imx->i2c_I2SR & I2SR_IBB) )
 			{
-				i2c_imx->data_request = 1;
-				/* __DEBUG__ */ vmm_printf("**** %s: Repeat Start: i2c_I2SR=0x%08x \n", \
+				i2c_imx->i2c_I2SR &= ~I2SR_IBB;
+				i2c_imx->slave_addr_request = 1;
+				i2c_imx->i2c_I2SR |= I2SR_ICF;
+				/* __DEBUG__ */ vmm_printf("**** %s: End Start: i2c_I2SR=0x%08x \n", \
 					__func__, i2c_imx->i2c_I2SR);
 			}
 
-			/* End of start */
-			if(i2c_imx->i2c_I2CR & (I2CR_IIEN | I2CR_MTX | I2CR_TXAK))
+			/* repeat start */
+			if(i2c_imx->i2c_I2CR & I2CR_RSTA)
 			{
-				i2c_imx->i2c_I2SR &= ~I2SR_IBB; //free bus busy
+				i2c_imx->i2c_I2SR |= I2SR_IBB;
 				i2c_imx->slave_addr_request = 1;
-				/* __DEBUG__ */ vmm_printf("**** %s: End Start: i2c_I2SR=0x%08x \n", \
+				/* __DEBUG__ */ vmm_printf("**** %s: Repeat Start: i2c_I2SR=0x%08x \n", \
 					__func__, i2c_imx->i2c_I2SR);
 			}
 
@@ -315,7 +322,6 @@ static int i2c_imx_reg_write(struct i2c_imx_state *i2c_imx,
 			{
 				i2c_imx->slave_addr = (val & mask & I2DR_WR_MASK);
 				i2c_imx->slave_addr_request = 0;
-				i2c_imx->slave_addr_is_set = 1;
 				i2c_imx->data_request = 1;
 				/* __DEBUG__ */ vmm_printf("**** %s: slave_addr=0x%08x \n",__func__,i2c_imx->slave_addr);
 			}
@@ -384,7 +390,9 @@ static int i2c_imx_emulator_reset(struct vmm_emudev *edev)
 	i2c_imx->i2c_I2CR = 0x00000000;
 	i2c_imx->i2c_I2SR = 0x00000000;
 	i2c_imx->i2c_I2DR = 0x00000000;
-	
+
+	slave_addr_request = false;
+	slave_addr = 0x00000000;
 	i2c_imx->irq_level = 0;
 	vmm_devemu_emulate_irq(i2c_imx->guest, i2c_imx->irq, 0);
 
@@ -421,6 +429,9 @@ static int i2c_imx_emulator_probe(struct vmm_guest *guest,
 	i2c_imx->i2c_I2SR = 0x00000000; // 0-2: multy | 3:reserved | 4-7: miultiple value | 8-15: reserved   (ICF,IAAS,IBB,SRW,RXAK ro)
 	i2c_imx->i2c_I2DR = 0x00000000; // 0-7: data | 8-15:reserved
 	
+
+	slave_addr_request = false;
+	slave_addr = 0x00000000;
 
 	/* init irq */
 	rc = vmm_devtree_irq_get(edev->node, &i2c_imx->irq, 0);

@@ -49,6 +49,10 @@ typedef unsigned long ulong;
 typedef signed int off_t;
 typedef signed long long loff_t;
 
+typedef long int intptr_t;
+typedef unsigned long int uintptr_t;
+
+
 /** Boolean macros */
 #define TRUE			1
 #define FALSE			0

@@ -103,10 +103,39 @@ struct i2c_imx_state {
 
 	bool data_request;
 	u32 data;
+	struct i2c_adapter *adapter;
 };
 
 
 
+/*************************************************/
+/********************* FONC **********************/
+/*************************************************/
+
+static int i2cimx_attach_adapter(struct device *dev, void *dummy)
+{
+	struct i2c_adapter *adap;
+	struct vmm_emudev *edev;
+	struct i2c_imx_state *i2c_imx;
+
+	/* get adapter */
+	if (dev->type != &i2c_adapter_type)
+		return 0;
+	adap = to_i2c_adapter(dev);
+
+	/* set adapter to i2c_imx_state */
+	edev = dummy;
+	i2c_imx = edev->priv;
+
+	if (strcmp(adap->name, edev->node->name) == 0)
+	{
+		i2c_imx->adapter = adap;
+		/* __DEBUG__ */ vmm_printf("**** %s: adapter is set \n",__func__);
+	}
+
+
+	return 0;
+}
 
 
 
@@ -453,6 +482,7 @@ static int i2c_imx_emulator_probe(struct vmm_guest *guest,
 	i2c_imx->slave_addr = 0x00000000;
 	i2c_imx->data_request = false;
 	i2c_imx->data = 0x00000000;
+	i2c_imx->adapter = NULL;
 
 	/* init irq */
 	rc = vmm_devtree_irq_get(edev->node, &i2c_imx->irq, 0);
@@ -462,9 +492,12 @@ static int i2c_imx_emulator_probe(struct vmm_guest *guest,
 	}
 	i2c_imx->irq_level = 0;
 
-	INIT_SPIN_LOCK(&i2c_imx->lock);
 
 	edev->priv = i2c_imx;
+
+	i2c_for_each_dev(edev, i2cimx_attach_adapter);
+
+	INIT_SPIN_LOCK(&i2c_imx->lock);
 
 	return VMM_OK;
 }

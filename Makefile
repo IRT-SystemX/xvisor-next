@@ -167,6 +167,9 @@ cppflags+=$(board-cppflags)
 cppflags+=$(libs-cppflags-y)
 cc=$(CROSS_COMPILE)gcc
 cflags=-g $(toolchain_warnings) -nostdlib --sysroot=$(drivers_dir)/include -fno-builtin -D__VMM__
+ifdef CONFIG_STACK_PROTECTOR
+cflags+=-fstack-protector
+endif
 cflags+=$(board-cflags) 
 cflags+=$(cpu-cflags) 
 cflags+=$(libs-cflags-y) 

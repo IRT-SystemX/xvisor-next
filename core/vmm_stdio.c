@@ -58,7 +58,8 @@ static inline void _vmm_format_error(const char *fmt, char err)
 
 bool vmm_iscontrol(char c)
 {
-	return ((0 <= c) && (c < 32)) ? TRUE : FALSE;
+	const signed char ascii = c;
+	return ((ascii >= 0) && (ascii < 32)) ? TRUE : FALSE;
 }
 
 bool vmm_isprintable(char c)

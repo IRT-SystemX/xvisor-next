@@ -115,6 +115,7 @@ toolchain_warnings += -Wstrict-prototypes
 toolchain_warnings += -Wlogical-op
 toolchain_warnings += -Wfloat-equal
 toolchain_warnings += -Winit-self
+toolchain_warnings += -Wformat-nonliteral -Wformat-security -Wformat-y2k
 
 # Profiling helpers. Enable this to optimize functions.
 #toolchain_warnings += -Wsuggest-attribute=pure

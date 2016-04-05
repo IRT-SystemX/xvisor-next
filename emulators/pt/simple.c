@@ -1,5 +1,7 @@
 /**
  * Copyright (c) 2015 Anup Patel.
+ *               2016 Open Wide
+ *               2016 Institut de Recherche Technologique SystemX
  * All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -40,13 +42,35 @@
 #define	MODULE_INIT			simple_emulator_init
 #define	MODULE_EXIT			simple_emulator_exit
 
+#define MEMORY_PASSTHROUGH_ATTR "memory-passthrough"
+#define VERBOSITY_ATTR          "verbosity"
+
+enum verbosity {
+        VERBOSITY_NONE       = 0,
+        VERBOSITY_READ       = (1 << 0),
+        VERBOSITY_WRITE      = (1 << 1),
+        VERBOSITY_READ_WRITE = (VERBOSITY_READ | VERBOSITY_WRITE),
+
+        __VERBOSITY_LAST /* Sentinel */
+};
+
+enum memory_pt {
+        MEMORY_PT_NONE       = 0,
+        MEMORY_PT_READ       = (1 << 0),
+        MEMORY_PT_WRITE      = (1 << 1),
+        MEMORY_PT_READ_WRITE = (MEMORY_PT_READ | MEMORY_PT_WRITE),
+
+        __MEMORY_PT_LAST /* Sentinel */
+};
+
 struct simple_state {
 	char name[64];
 	struct vmm_guest *guest;
-        u32 memory_pt;
 	u32 irq_count;
 	u32 *host_irqs;
 	u32 *guest_irqs;
+        u32 memory_pt;
+        u32 verbosity;
 };
 
 
@@ -59,12 +83,23 @@ static int simple_emulator_read(struct vmm_emudev *edev,
                                 u32 *dst,
                                 u32 size)
 {
+        const struct simple_state *s = edev->priv;
         int ret;
+
+        /* Ignore if memoty pt READ not enabled */
+        if (!(s->memory_pt & MEMORY_PT_READ)) {
+                return VMM_OK;
+        }
 
         ret = vmm_host_memory_read(edev->reg->hphys_addr + offset,
                                    dst, size, false);
-        vmm_printf("[PT/%s]: [0x%"PRIPADDR"] => 0x%"PRIx32". Read %"PRIu32" bytes (status: %i)\n",
-                   edev->node->name, edev->reg->hphys_addr + offset, *dst, size, ret);
+
+        if (s->verbosity & VERBOSITY_READ) {
+                vmm_printf("[PT/%s]: [0x%"PRIPADDR"] => 0x%"PRIx32". "
+                           "Read %"PRIu32" bytes (status: %i)\n",
+                           edev->node->name, edev->reg->hphys_addr + offset,
+                           *dst, size, ret);
+        }
 
         return (ret == size) ? VMM_OK : VMM_EFAIL;
 }
@@ -75,12 +110,24 @@ static int simple_emulator_write(struct vmm_emudev *edev,
                                  u32 mask,
                                  u32 size)
 {
+        const struct simple_state *s = edev->priv;
         int ret;
+
+        /* Ignore if memoty pt WRITE not enabled */
+        if (!(s->memory_pt & MEMORY_PT_WRITE)) {
+                return VMM_OK;
+        }
 
         ret = vmm_host_memory_write(edev->reg->hphys_addr + offset,
                                     &val, size, false);
-        vmm_printf("[PT/%s]: [0x%"PRIPADDR"] <= 0x%"PRIx32". Wrote %"PRIu32" bytes (status: %i)\n",
-                   edev->node->name, edev->reg->hphys_addr + offset, val, size, ret);
+
+        if (s->verbosity & VERBOSITY_WRITE) {
+                vmm_printf("[PT/%s]: [0x%"PRIPADDR"] <= 0x%"PRIx32". "
+                           "Wrote %"PRIu32" bytes (status: %i)\n",
+                           edev->node->name, edev->reg->hphys_addr + offset,
+                           val, size, ret);
+        }
+
         return (ret == size) ? VMM_OK : VMM_EFAIL;
 }
 
@@ -169,14 +216,37 @@ static int simple_emulator_probe(struct vmm_guest *guest,
 	s->irq_count = vmm_devtree_irq_count(edev->node);
 	s->guest_irqs = NULL;
 	s->host_irqs = NULL;
+        s->memory_pt = MEMORY_PT_NONE;
+        s->verbosity = VERBOSITY_NONE;
 
-        i = vmm_devtree_attrlen(edev->node, "memory-passthrough") / sizeof(u32);
+        /* Is it a memory pass-though? */
+        i = vmm_devtree_attrlen(edev->node, MEMORY_PASSTHROUGH_ATTR) / sizeof(u32);
         if (i > 0) {
                 rc = vmm_devtree_read_u32_atindex(edev->node,
-                                                  "memory-passthrough",
-                                                  &s->memory_pt, i);
+                                                  MEMORY_PASSTHROUGH_ATTR,
+                                                  &s->memory_pt, 0);
+                if (s->memory_pt >= __MEMORY_PT_LAST) {
+                        rc = VMM_EINVALID;
+                        vmm_printf("*** Invalid "MEMORY_PASSTHROUGH_ATTR" value: "
+                                   "0x%"PRIx32"\n", s->memory_pt);
+                        goto simple_emulator_probe_freestate_fail;
+                }
         }
-        vmm_printf("--- memory passthrough: %i\n", s->memory_pt);
+
+        /* Get verbosity */
+        i = vmm_devtree_attrlen(edev->node, VERBOSITY_ATTR) / sizeof(u32);
+        if (i > 0) {
+                rc = vmm_devtree_read_u32_atindex(edev->node,
+                                                  VERBOSITY_ATTR,
+                                                  &s->verbosity, 0);
+                if (s->verbosity >= __VERBOSITY_LAST) {
+                        rc = VMM_EINVALID;
+                        vmm_printf("*** Invalid "VERBOSITY_ATTR" value: "
+                                   "0x%"PRIx32"\n", s->verbosity);
+                        goto simple_emulator_probe_freestate_fail;
+                }
+        }
+
 
 	i = vmm_devtree_attrlen(edev->node, "host-interrupts") / sizeof(u32);
 	if (s->irq_count != i) {
@@ -226,6 +296,8 @@ static int simple_emulator_probe(struct vmm_guest *guest,
 		irq_reg_count++;
 	}
 
+        vmm_printf("%s: simple/pt. Memory flags: 0x%"PRIx32"\n",
+                   s->name, s->memory_pt);
 	edev->priv = s;
 
 	return VMM_OK;

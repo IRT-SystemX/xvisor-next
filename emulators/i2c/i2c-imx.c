@@ -274,11 +274,6 @@ static int i2c_imx_reg_write(struct i2c_imx_state *i2c_imx,
 			/* __DEBUG__ */ vmm_printf("**** %s: Write i2c_IFDR: i2c_IFDR=0x%08x | val=0x%08x \n", \
 					__func__, i2c_imx->i2c_IFDR, (val & mask & IFDR_WR_MASK));
 			i2c_imx->i2c_IFDR = (i2c_imx->i2c_IFDR & ~mask) | (val & mask & IFDR_WR_MASK);
-
-			/* Start */
-			i2c_imx->i2c_I2SR |= I2SR_IBB;
-			/* __DEBUG__ */ vmm_printf("**** %s: Start: i2c_I2SR=0x%08x \n", \
-					__func__, i2c_imx->i2c_I2SR);
 			break;
 
 		case IMX_I2C_I2CR: /* i2c control */
@@ -319,23 +314,40 @@ static int i2c_imx_reg_write(struct i2c_imx_state *i2c_imx,
 				i2c_imx->irq_level = 0;
 			}
 
-			/* End of start */
-			if( (i2c_imx->i2c_I2CR & (I2CR_IIEN | I2CR_MTX | I2CR_TXAK)) && (i2c_imx->i2c_I2SR & I2SR_IBB) )
-			{
-				i2c_imx->i2c_I2SR &= ~I2SR_IBB;
-				i2c_imx->slave_addr_request = 1;
-				i2c_imx->i2c_I2SR |= I2SR_ICF;
-				/* __DEBUG__ */ vmm_printf("**** %s: End Start: i2c_I2SR=0x%08x \n", \
-					__func__, i2c_imx->i2c_I2SR);
+			if ((i2c_imx->i2c_I2CR & I2CR_MSTA)!=(prev_I2CR & I2CR_MSTA)){
+				if (i2c_imx->i2c_I2CR & I2CR_MSTA)
+				{
+					vmm_printf("**** %s: |START| \n", __func__);
+					i2c_imx->slave_addr_request = true;
+					i2c_imx->data_request = false;
+					i2c_imx->i2c_I2SR |= I2SR_IBB;
+					/* clear msg */
+					i2c_imx->nb_buf = 0;
+				}
+				else
+				{
+					vmm_printf("**** %s: |STOP| \n", __func__);
+					i2c_imx->slave_addr_request = false;
+					i2c_imx->data_request = false;
+					i2c_imx->i2c_I2SR &= ~I2SR_IBB;
+				/* if R/W=0 */
+//				if (!(i2c_imx->slave_addr && 0x1))
+//					call_i2c_transfer_write(i2c_imx);
+					vmm_printf("**** %s: |SEND msg [%d]| \n", __func__, i2c_imx->nb_buf);
+				}
 			}
 
 			/* repeat start */
 			if(i2c_imx->i2c_I2CR & I2CR_RSTA)
 			{
-				i2c_imx->i2c_I2SR |= I2SR_IBB;
-				i2c_imx->slave_addr_request = 1;
-				/* __DEBUG__ */ vmm_printf("**** %s: Repeat Start: i2c_I2SR=0x%08x \n", \
-					__func__, i2c_imx->i2c_I2SR);
+				vmm_printf("**** %s: |REPEAT START| \n", __func__);
+				i2c_imx->slave_addr_request = true;
+				i2c_imx->data_request = false;
+				i2c_imx->num = 0;
+				vmm_printf("**** %s: |SEND msg [%d]| \n", __func__, i2c_imx->nb_buf);
+				/* if R/W=0 */
+//				if (!(i2c_imx->slave_addr && 0x1))
+//				call_i2c_transfer_write(i2c_imx);
 			}
 
 			/* MSTA: _/ set start signal: master | \_ set stop signal: slave */
@@ -371,6 +383,8 @@ static int i2c_imx_reg_write(struct i2c_imx_state *i2c_imx,
 			{
 				i2c_imx->data = (val & mask & I2DR_WR_MASK);
 				/* __DEBUG__ */ vmm_printf("**** %s: data=0x%08x \n",__func__,i2c_imx->data);
+				/* clear msg */
+				i2c_imx->nb_buf = 0;
 			}
 
 			/* Set IRQ */

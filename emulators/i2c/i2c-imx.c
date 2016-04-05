@@ -103,7 +103,15 @@ struct i2c_imx_state {
 
 	bool data_request;
 	u32 data;
+
+	int num; //nb data trans; start set 0, i2dr num++; stop call fonc
+	u32 tab_data[256];
+
 	struct i2c_adapter *adapter;
+
+	u8 buf[256];
+	int nb_buf;
+	struct i2c_msg msg;
 };
 
 
@@ -171,6 +179,10 @@ static int i2c_imx_reg_read(struct i2c_imx_state *i2c_imx,
 		break;
 
 	case IMX_I2C_I2DR:
+		if (i2c_imx->data_request)
+		{
+			i2c_imx->msg.flags = I2C_M_RD;
+		}
 
 		/* Set IRQ */
 		if (i2c_imx->irq_level)
@@ -327,14 +339,6 @@ static int i2c_imx_reg_write(struct i2c_imx_state *i2c_imx,
 			vmm_devemu_emulate_irq(i2c_imx->guest, i2c_imx->irq,0);
 		}
 
-				i2c_imx->slave_addr = (val & mask & I2DR_WR_MASK);
-				i2c_imx->slave_addr_request = 0;
-				i2c_imx->data_request = 1;
-				/* __DEBUG__ */ vmm_printf("**** %s: slave_addr=0x%08x \n",__func__,i2c_imx->slave_addr);
-				i2c_imx->data = (val & mask & I2DR_WR_MASK);
-				/* __DEBUG__ */ vmm_printf("**** %s: data=0x%08x \n",__func__,i2c_imx->data);
-				/* clear msg */
-				i2c_imx->nb_buf = 0;
 		/* IIEN */
 		if (i2c_imx->i2c_I2CR & I2CR_IIEN)
 		{
@@ -372,12 +376,30 @@ static int i2c_imx_reg_write(struct i2c_imx_state *i2c_imx,
 		/* Recept slave addr */
 		if (i2c_imx->slave_addr_request)
 		{
+			i2c_imx->slave_addr_request = false;
+			i2c_imx->data_request = true;
+			i2c_imx->slave_addr = (val & mask & I2DR_WR_MASK);
+			i2c_imx->msg.addr = (val & mask & I2DR_WR_MASK) >> 1;
+			i2c_imx->nb_buf=0;
+			i2c_imx->msg.buf = i2c_imx->buf;
+			/* __DEBUG__ */ vmm_printf("**** %s: slave_addr=0x%08x \n",__func__,i2c_imx->slave_addr);
 		}
 		else if (i2c_imx->data_request)
 		{
+			i2c_imx->tab_data[i2c_imx->num] = (val & mask & I2DR_WR_MASK);
+			(i2c_imx->num)++;
+			i2c_imx->data = (val & mask & I2DR_WR_MASK);
+
+			i2c_imx->buf[i2c_imx->nb_buf] = (val & mask & I2DR_WR_MASK);
+			i2c_imx->nb_buf++;
+			if ( i2c_imx->nb_buf == 0) /* command */
 			{
+				vmm_printf("**** %s: command=0x%08x \n",__func__,i2c_imx->data);
 			}
+			else /* write data */
 			{
+				i2c_imx->msg.flags = 0;
+				vmm_printf("**** %s: data=0x%08x \n",__func__,i2c_imx->data);	
 			}
 		}
 
@@ -487,6 +509,8 @@ static int i2c_imx_emulator_probe(struct vmm_guest *guest,
 	i2c_imx->slave_addr = 0x00000000;
 	i2c_imx->data_request = false;
 	i2c_imx->data = 0x00000000;
+
+	i2c_imx->num = 0;
 	i2c_imx->adapter = NULL;
 
 	/* init irq */

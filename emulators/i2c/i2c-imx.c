@@ -120,10 +120,10 @@ static int i2cimx_attach_adapter(struct device *dev, void *dummy)
 
 	/* get adapter */
 	if (dev->type != &i2c_adapter_type)
-		return 0;
+		return VMM_EINVALID;
 	adap = to_i2c_adapter(dev);
 
-	/* set adapter to i2c_imx_state */
+	/* set right adapter to i2c_imx_state */
 	edev = dummy;
 	i2c_imx = edev->priv;
 
@@ -133,8 +133,7 @@ static int i2cimx_attach_adapter(struct device *dev, void *dummy)
 		/* __DEBUG__ */ vmm_printf("**** %s: adapter is set \n",__func__);
 	}
 
-
-	return 0;
+	return VMM_OK;
 }
 
 

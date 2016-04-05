@@ -1991,6 +1991,61 @@ const struct vmm_devtree_nodeid *
 	return matches;
 }
 
+int vmm_devtree_read_clock_names_array(const struct vmm_devtree_node  *node,
+                                       char                          **out,
+                                       size_t                          clocks)
+{
+        const char *attr;
+        size_t idx = 0;
+
+	if (!node || !out || (clocks == 0)) {
+		return VMM_EINVALID;
+	}
+
+        attr = vmm_devtree_attrval(node, VMM_DEVTREE_CLOCK_NAMES_ATTR_NAME);
+        if (!attr) {
+                return VMM_ENOTAVAIL;
+        }
+
+        while (idx < clocks) {
+                out[idx++] = attr;
+                while (*(++attr) != '\0') { /* Go to next word */ }
+                attr++; /* Skip '\0' */
+        }
+
+        return VMM_OK;
+}
+
+int vmm_devtree_count_clocks(const struct vmm_devtree_node *node,
+                             u32                           *out)
+{
+        const char *attr;
+        u32 len, i, count = 0;
+
+        if (!node || !out) {
+		return VMM_EINVALID;
+        }
+
+        len = vmm_devtree_attrlen(node, VMM_DEVTREE_CLOCK_NAMES_ATTR_NAME);
+        if (!len) {
+                return VMM_ENOTAVAIL;
+        }
+        attr = vmm_devtree_attrval(node, VMM_DEVTREE_CLOCK_NAMES_ATTR_NAME);
+        if (!attr) {
+                return VMM_ENOTAVAIL;
+        }
+
+        for (i = 0; i < len; ++i) {
+                if (*(++attr) == '\0') {
+                        count++;
+                }
+        }
+        *out = count - 1; /* Don't count the trailing '\0' */
+
+        return VMM_OK;
+}
+
+
 void vmm_devtree_nidtbl_destroy_matches(
 				const struct vmm_devtree_nodeid *matches)
 {

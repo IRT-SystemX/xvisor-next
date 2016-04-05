@@ -204,6 +204,29 @@ u32 vmm_devtree_estimate_attrtype(const char *name);
 const void *vmm_devtree_attrval(const struct vmm_devtree_node *node,
 				const char *attrib);
 
+/**
+ * Get the amount of clocks in a device tree node
+ * @param[in] node Device tree node to examinate
+ * @param[out] out Count of clocks in @p node
+ * @return Error status
+ */
+int vmm_devtree_count_clocks(const struct vmm_devtree_node *node,
+                             u32                           *out);
+
+/**
+ * Get the list of clock names in an array
+ * @param[in] node Device tree node to examinate
+ * @param[out] out User-provided array of pointers to strings that must hold at
+ * least @p clocks elements
+ * @param[in] clocks The count of clocks that will be retrieved
+ * @return Error status
+ *
+ * @see vmm_devtree_count_clocks()
+ */
+int vmm_devtree_read_clock_names_array(const struct vmm_devtree_node  *node,
+                                       char                          **out,
+                                       size_t                          clocks);
+
 /** Get length of attribute value */
 u32 vmm_devtree_attrlen(const struct vmm_devtree_node *node,
 			const char *attrib);

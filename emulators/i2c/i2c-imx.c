@@ -154,48 +154,41 @@ static int i2c_imx_reg_read(struct i2c_imx_state *i2c_imx,
 	vmm_devemu_emulate_irq(i2c_imx->guest, i2c_imx->irq, 0);
 
 	switch (offset >> IMX_I2C_REGSHIFT) {
-		case IMX_I2C_IADR:
-			*dst = (i2c_imx->i2c_IADR & IADR_RD_MASK);
-			/* __DEBUG__ */ vmm_printf("**** %s: Read i2c_IADR: 0x%08x \n",__func__, *dst);
-
-			break;
+	case IMX_I2C_IADR:
+		*dst = (i2c_imx->i2c_IADR & IADR_RD_MASK);
+		break;
 	
-		case IMX_I2C_IFDR:
-			*dst = (i2c_imx->i2c_IFDR & IFDR_RD_MASK);
-			/* __DEBUG__ */ vmm_printf("**** %s: Read i2c_IFDR: 0x%08x \n",__func__, *dst);
-			break;
+	case IMX_I2C_IFDR:
+		*dst = (i2c_imx->i2c_IFDR & IFDR_RD_MASK);
+		break;
 
-		case IMX_I2C_I2CR:
-			*dst = (i2c_imx->i2c_I2CR & I2CR_RD_MASK);
-			/* __DEBUG__ */ vmm_printf("**** %s: Read i2c_I2CR: 0x%08x \n",__func__, *dst);
+	case IMX_I2C_I2CR:
+		*dst = (i2c_imx->i2c_I2CR & I2CR_RD_MASK);
+		break;
 
-			break;
+	case IMX_I2C_I2SR:
+		*dst = (i2c_imx->i2c_I2SR & I2SR_RD_MASK);
+		break;
 
-		case IMX_I2C_I2SR:
-			*dst = (i2c_imx->i2c_I2SR & I2SR_RD_MASK);
-			/* __DEBUG__ */ vmm_printf("**** %s: Read i2c_I2SR: 0x%08x \n",__func__, *dst);
-			break;
+	case IMX_I2C_I2DR:
 
-		case IMX_I2C_I2DR:
-			/* Set IRQ */
-			if (i2c_imx->irq_level)
-			{
-				i2c_imx->i2c_I2SR |= I2SR_IIF;
-				/* __DEBUG__ */ vmm_printf("**** %s: IIF: i2c_I2SR=0x%08x \n",__func__,i2c_imx->i2c_I2SR);
-				vmm_devemu_emulate_irq(i2c_imx->guest, i2c_imx->irq, 1);
-			}
-			else
-			{
-				i2c_imx->i2c_I2SR |= I2SR_IIF;
-			}
-			*dst = (i2c_imx->i2c_I2DR & I2DR_RD_MASK);
-			/* __DEBUG__ */ vmm_printf("**** %s: Read i2c_I2DR: 0x%08x \n",__func__, *dst);
-			break;	
+		/* Set IRQ */
+		if (i2c_imx->irq_level)
+		{
+			i2c_imx->i2c_I2SR |= I2SR_IIF;
+			vmm_devemu_emulate_irq(i2c_imx->guest, i2c_imx->irq, 1);
+		}
+		else
+		{
+			i2c_imx->i2c_I2SR |= I2SR_IIF;
+		}
+		*dst = (i2c_imx->i2c_I2DR & I2DR_RD_MASK);
+		/* __DEBUG__ */ vmm_printf("**** %s: read val=0x%08x \n",__func__,*dst);
+		break;
 
-		default:
-			/* __DEBUG__ */ vmm_printf("**** %s: Read default: 0x%08x \n",__func__, *dst);
-			ret = VMM_EINVALID;
-			break;
+	default:
+		ret = VMM_EINVALID;
+		break;
 	};
 
 	vmm_spin_unlock(&i2c_imx->lock);
@@ -256,154 +249,153 @@ static int i2c_imx_reg_write(struct i2c_imx_state *i2c_imx,
 			   	u32 val)
 {
 	int ret = VMM_OK; 
-
+	u32 prev_I2CR;
 	vmm_spin_lock(&i2c_imx->lock);
 
 	/* lower the interrupt level */
 	vmm_devemu_emulate_irq(i2c_imx->guest, i2c_imx->irq, 0);
 
 	switch (offset >> IMX_I2C_REGSHIFT) {
+	case IMX_I2C_IADR: /* i2c slave address */ 
+		i2c_imx->i2c_IADR = (i2c_imx->i2c_IADR & ~mask) | \
+				    (val & mask & IADR_WR_MASK);
+		break;
 
-		case IMX_I2C_IADR: /* i2c slave address */ 
-			/* __DEBUG__ */ vmm_printf("**** %s: Write i2c_IADR: i2c_IADR=0x%08x | val=0x%08x \n", \
-					__func__, i2c_imx->i2c_IADR, (val & mask & IADR_WR_MASK) );
-			i2c_imx->i2c_IADR = (i2c_imx->i2c_IADR & ~mask) | (val & mask & IADR_WR_MASK);
-			break;
+	case IMX_I2C_IFDR: /* i2c frequency divider */
+		i2c_imx->i2c_IFDR = (i2c_imx->i2c_IFDR & ~mask) | \
+				    (val & mask & IFDR_WR_MASK);
+		break;
 
-		case IMX_I2C_IFDR: /* i2c frequency divider */
-			/* __DEBUG__ */ vmm_printf("**** %s: Write i2c_IFDR: i2c_IFDR=0x%08x | val=0x%08x \n", \
-					__func__, i2c_imx->i2c_IFDR, (val & mask & IFDR_WR_MASK));
-			i2c_imx->i2c_IFDR = (i2c_imx->i2c_IFDR & ~mask) | (val & mask & IFDR_WR_MASK);
-			break;
+	case IMX_I2C_I2CR: /* i2c control */
+		prev_I2CR = i2c_imx->i2c_I2CR;
+		i2c_imx->i2c_I2CR = (i2c_imx->i2c_I2CR & ~mask) | \
+				    (val & mask & I2CR_WR_MASK);
 
-		case IMX_I2C_I2CR: /* i2c control */
-			/* __DEBUG__ */ vmm_printf("**** %s: Write i2c_I2CR: i2c_I2CR=0x%08x | val=0x%08x \n", \
-					__func__, i2c_imx->i2c_I2CR, (val & mask & I2CR_WR_MASK));
-			i2c_imx->i2c_I2CR = (i2c_imx->i2c_I2CR & ~mask) | (val & mask & I2CR_WR_MASK);
-
-			/* __DEBUG__ */
-			if (i2c_imx->i2c_I2CR & I2CR_MSTA) vmm_printf("**** %s: Write i2c_I2CR: Master mode \n", __func__);
-			else vmm_printf("**** %s: Write i2c_I2CR: Slave mode \n", __func__);
-
-			/* IEN: if I2C enable bit is set to 0 */
-			if ( !(i2c_imx->i2c_I2CR & I2CR_IEN) )
+		/* __DEBUG__ */
+		if ((i2c_imx->i2c_I2CR & I2CR_MSTA)!=(prev_I2CR & I2CR_MSTA)){
+			if (i2c_imx->i2c_I2CR & I2CR_MSTA)
 			{
-				/* __DEBUG__ */ vmm_printf("**** %s: Write i2c_I2CR: reset request \n", __func__);
-				i2c_imx->i2c_I2CR = 0x00000000;
-				i2c_imx->i2c_I2SR = 0x00000000;
-				i2c_imx->i2c_I2DR = 0x00000000;
-
-				i2c_imx->slave_addr_request = false;
-				i2c_imx->slave_addr = 0x00000000;
+				vmm_printf("**** %s: |START| \n", __func__);
+				i2c_imx->slave_addr_request = true;
 				i2c_imx->data_request = false;
-				i2c_imx->data = 0x00000000;
-
-				i2c_imx->irq_level = 0;
-				vmm_devemu_emulate_irq(i2c_imx->guest, i2c_imx->irq, 0);
-			}
-
-			/* IIEN */
-			if (i2c_imx->i2c_I2CR & I2CR_IIEN)
-			{
-				/* Enabling IRQ */
-				i2c_imx->irq_level = 1;
+				i2c_imx->i2c_I2SR |= I2SR_IBB;
+				/* clear msg */
+				i2c_imx->nb_buf = 0;
 			}
 			else
 			{
-				/* Disabling IRQ */
-				i2c_imx->irq_level = 0;
-			}
-
-			if ((i2c_imx->i2c_I2CR & I2CR_MSTA)!=(prev_I2CR & I2CR_MSTA)){
-				if (i2c_imx->i2c_I2CR & I2CR_MSTA)
-				{
-					vmm_printf("**** %s: |START| \n", __func__);
-					i2c_imx->slave_addr_request = true;
-					i2c_imx->data_request = false;
-					i2c_imx->i2c_I2SR |= I2SR_IBB;
-					/* clear msg */
-					i2c_imx->nb_buf = 0;
-				}
-				else
-				{
-					vmm_printf("**** %s: |STOP| \n", __func__);
-					i2c_imx->slave_addr_request = false;
-					i2c_imx->data_request = false;
-					i2c_imx->i2c_I2SR &= ~I2SR_IBB;
+				vmm_printf("**** %s: |STOP| \n", __func__);
+				i2c_imx->slave_addr_request = false;
+				i2c_imx->data_request = false;
+				i2c_imx->i2c_I2SR &= ~I2SR_IBB;
 				/* if R/W=0 */
 //				if (!(i2c_imx->slave_addr && 0x1))
 //					call_i2c_transfer_write(i2c_imx);
-					vmm_printf("**** %s: |SEND msg [%d]| \n", __func__, i2c_imx->nb_buf);
-				}
-			}
-
-			/* repeat start */
-			if(i2c_imx->i2c_I2CR & I2CR_RSTA)
-			{
-				vmm_printf("**** %s: |REPEAT START| \n", __func__);
-				i2c_imx->slave_addr_request = true;
-				i2c_imx->data_request = false;
-				i2c_imx->num = 0;
 				vmm_printf("**** %s: |SEND msg [%d]| \n", __func__, i2c_imx->nb_buf);
-				/* if R/W=0 */
-//				if (!(i2c_imx->slave_addr && 0x1))
-//				call_i2c_transfer_write(i2c_imx);
 			}
+		}
 
-			/* MSTA: _/ set start signal: master | \_ set stop signal: slave */
-			/* MTX:  0: receive | 1: transmit */
-			/* TXAK */
-			/* RSTA */
-			break;
+		/* repeat start */
+		if(i2c_imx->i2c_I2CR & I2CR_RSTA)
+		{
+			vmm_printf("**** %s: |REPEAT START| \n", __func__);
+			i2c_imx->slave_addr_request = true;
+			i2c_imx->data_request = false;
+			i2c_imx->num = 0;
+			vmm_printf("**** %s: |SEND msg [%d]| \n", __func__, i2c_imx->nb_buf);
+			/* if R/W=0 */
+//			if (!(i2c_imx->slave_addr && 0x1))
+//				call_i2c_transfer_write(i2c_imx);
+			/* clear msg */
+			i2c_imx->nb_buf = 0;
+		}
 
-		case IMX_I2C_I2SR: /* i2c status */
-			/* __DEBUG__ */ vmm_printf("**** %s: Write i2c_I2SR: i2c_I2SR=0x%08x | val=0x%08x \n", \
-					__func__, i2c_imx->i2c_I2SR, (val & mask & I2SR_WR_MASK));
-			i2c_imx->i2c_I2SR = (i2c_imx->i2c_I2SR & (~mask | ~I2SR_WR_MASK) ) | (val & mask & I2SR_WR_MASK);
-			/* __DEBUG__ */ vmm_printf("**** %s: i2c_I2SR=0x%08x\n", \
-					__func__, i2c_imx->i2c_I2SR);
-			/* IAL */
-			/* IIF */
-			break;
+		/* IEN: if I2C enable bit is set to 0 */
+		if ( !(i2c_imx->i2c_I2CR & I2CR_IEN) )
+		{
+//			/* __DEBUG__ */ vmm_printf("**** %s: Write i2c_I2CR: reset request \n", __func__);
+			i2c_imx->i2c_I2CR = 0x00000000;
+			i2c_imx->i2c_I2SR = 0x00000000;
+			i2c_imx->i2c_I2DR = 0x00000000;
 
-		case IMX_I2C_I2DR: /* i2c transfer data */
-			/* __DEBUG__ */ vmm_printf("**** %s: Write i2c_I2DR: i2c_I2DR=0x%08x | val=0x%08x \n", \
-					__func__, i2c_imx->i2c_I2DR, (val & mask & I2DR_WR_MASK));
-			i2c_imx->i2c_I2DR = (i2c_imx->i2c_I2DR & ~mask) | (val & mask & I2DR_WR_MASK);
+			i2c_imx->slave_addr_request = false;
+			i2c_imx->slave_addr = 0x00000000;
+			i2c_imx->data_request = false;
+			i2c_imx->data = 0x00000000;
 
-			/* Recept slave addr */
-			if (i2c_imx->slave_addr_request)
-			{
+			i2c_imx->irq_level = 0;
+			vmm_devemu_emulate_irq(i2c_imx->guest, i2c_imx->irq,0);
+		}
+
 				i2c_imx->slave_addr = (val & mask & I2DR_WR_MASK);
 				i2c_imx->slave_addr_request = 0;
 				i2c_imx->data_request = 1;
 				/* __DEBUG__ */ vmm_printf("**** %s: slave_addr=0x%08x \n",__func__,i2c_imx->slave_addr);
-			}
-			else if (i2c_imx->data_request)
-			{
 				i2c_imx->data = (val & mask & I2DR_WR_MASK);
 				/* __DEBUG__ */ vmm_printf("**** %s: data=0x%08x \n",__func__,i2c_imx->data);
 				/* clear msg */
 				i2c_imx->nb_buf = 0;
-			}
+		/* IIEN */
+		if (i2c_imx->i2c_I2CR & I2CR_IIEN)
+		{
+			/* Enabling IRQ */
+			i2c_imx->irq_level = 1;
+		}
+		else
+		{
+			/* Disabling IRQ */
+			i2c_imx->irq_level = 0;
+		}
 
-			/* Set IRQ */
-			if (i2c_imx->irq_level)
-			{
-				i2c_imx->i2c_I2SR |= I2SR_IIF;
-				/* __DEBUG__ */ vmm_printf("**** %s: IIF: i2c_I2SR=0x%08x \n",__func__,i2c_imx->i2c_I2SR);
-				vmm_devemu_emulate_irq(i2c_imx->guest, i2c_imx->irq, 1);
-			}
-			else
-			{
-				i2c_imx->i2c_I2SR |= I2SR_IIF;
-			}
-			break;
 
-		default:
-			/* __DEBUG__ */ vmm_printf("**** %s: Write default: val=0x%08x \n",__func__,(val & mask)); 
-			ret = VMM_EINVALID;
-			break;
+		/* MSTA: _/ set start signal: master | \_ set stop signal: slave */
+		/* MTX:  0: receive | 1: transmit */
+		/* TXAK */
+		/* RSTA */
+		break;
+
+	case IMX_I2C_I2SR: /* i2c status */
+		i2c_imx->i2c_I2SR = (i2c_imx->i2c_I2SR & \
+				    (~mask | ~I2SR_WR_MASK) )\
+				     | (val & mask & I2SR_WR_MASK);
+		vmm_printf("**** %s: i2c_I2SR=0x%08x\n", __func__, i2c_imx->i2c_I2SR);
+		/* IAL */
+		/* IIF */
+		break;
+
+	case IMX_I2C_I2DR: /* i2c transfer data */
+		/* __DEBUG__ */ vmm_printf("**** %s: Write val=0x%08x \n", \
+					__func__, val & mask & I2DR_WR_MASK);
+		i2c_imx->i2c_I2DR = (i2c_imx->i2c_I2DR & ~mask) | \
+				    (val & mask & I2DR_WR_MASK);
+
+		/* Recept slave addr */
+		if (i2c_imx->slave_addr_request)
+		{
+		}
+		else if (i2c_imx->data_request)
+		{
+			{
+			}
+			{
+			}
+		}
+
+		/* Set IRQ */
+		if (i2c_imx->irq_level)
+		{
+			i2c_imx->i2c_I2SR |= I2SR_IIF;
+			vmm_devemu_emulate_irq(i2c_imx->guest, i2c_imx->irq, 1);
+		}
+		else
+		{
+			i2c_imx->i2c_I2SR |= I2SR_IIF;
+		}
+		break;
+
+	default:
+		ret = VMM_EINVALID;
+		break;
 	};
 
 	vmm_spin_unlock(&i2c_imx->lock);

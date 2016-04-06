@@ -33,6 +33,8 @@
 #include <vmm_spinlocks.h>
 #include <vmm_stdio.h>
 #include <libs/mathlib.h>
+#include <linux/i2c.h>
+#include <vmm_threads.h>
 
 /***** define ******/
 #define MODULE_DESC			"I2C emulator"
@@ -112,6 +114,10 @@ struct i2c_imx_state {
 	u8 buf[256];
 	int nb_buf;
 	struct i2c_msg msg;
+
+	u32 * ret_val;
+
+//	struct vmm_thread *thread;
 };
 
 
@@ -120,6 +126,7 @@ struct i2c_imx_state {
 /********************* FONC **********************/
 /*************************************************/
 
+/* @dummy : struct vmm_emudev *edev */
 static int i2cimx_attach_adapter(struct device *dev, void *dummy)
 {
 	struct i2c_adapter *adap;
@@ -142,6 +149,96 @@ static int i2cimx_attach_adapter(struct device *dev, void *dummy)
 	}
 
 	return VMM_OK;
+}
+/* ------------------------------------------------------------------------- */
+
+static void call_read(struct vmm_guest * guest, void *param){
+        vmm_printf("=>|call_read|\n");
+        struct i2c_imx_state *i2c_imx = param;
+
+	struct i2c_msg msgs[2];
+	u8 buf[1];
+
+	msgs[0].addr = i2c_imx->msg.addr;
+	msgs[0].flags = 0;
+	msgs[0].len = 1;
+	msgs[0].buf = i2c_imx->msg.buf;
+	msgs[1].addr = i2c_imx->msg.addr;
+	msgs[1].flags = I2C_M_RD;
+	msgs[1].len = 1;
+	msgs[1].buf = buf;
+	/* __DEBUG__ */ vmm_printf("**** %s: i2c_transfer: call read \n",__func__);
+	int ret = i2c_transfer(i2c_imx->adapter, msgs, 2);
+	/* __DEBUG__ */ vmm_printf("**** %s: i2c_transfer: done read \n",__func__);
+
+	if (ret == i2c_imx->num) {
+		i2c_imx->ret_val = (u32)msgs[1].buf; // *val = (buf[0] << 8) | buf[1];
+		//return 0;
+	}
+        //return VMM_OK;
+//	vmm_manager_guest_resume(i2c_imx->guest);
+}
+
+static void call_write(struct vmm_guest * guest, void *param){
+	vmm_printf("=>|call_write|\n");
+	struct i2c_imx_state *i2c_imx = param;
+
+	struct i2c_msg msgs[1];
+	u8 buf[1];
+
+	buf[0] = i2c_imx->data; //tab_data[0];
+	msgs[0].addr = i2c_imx->slave_addr >> 1;
+	msgs[0].flags = 0;
+	msgs[0].len = 1;
+	msgs[0].buf = buf;
+
+	/* __DEBUG__ */ vmm_printf("**** %s: i2c_transfer: call write\n",__func__);
+	i2c_transfer(i2c_imx->adapter, msgs, 1);
+	/* __DEBUG__ */ vmm_printf("**** %s: i2c_transfer: done write \n",__func__);
+
+//	vmm_manager_guest_resume(i2c_imx->guest);
+}
+
+/***************************/
+//	__u16 flags;
+//#define I2C_M_TEN		0x0010	/* this is a ten bit chip address */
+//#define I2C_M_RD		0x0001	/* read data, from slave to master */
+//#define I2C_M_STOP		0x8000	/* if I2C_FUNC_PROTOCOL_MANGLING */
+//#define I2C_M_NOSTART		0x4000	/* if I2C_FUNC_NOSTART */
+//#define I2C_M_REV_DIR_ADDR	0x2000	/* if I2C_FUNC_PROTOCOL_MANGLING */
+//#define I2C_M_IGNORE_NAK	0x1000	/* if I2C_FUNC_PROTOCOL_MANGLING */
+//#define I2C_M_NO_RD_ACK		0x0800	/* if I2C_FUNC_PROTOCOL_MANGLING */
+//#define I2C_M_RECV_LEN		0x0400	/* length will be first received byte */
+
+/****************************************/
+static int call_i2c_transfer_read(struct i2c_imx_state *i2c_imx, u32 *val)
+{
+	/* __DEBUG__ */ vmm_printf("**** %s \n",__func__);
+
+
+	/* __DEBUG__ */ vmm_printf("**** %s: vmm_manager call read\n",__func__);
+	vmm_manager_guest_request(i2c_imx->guest, call_read, i2c_imx);
+	/* __DEBUG__ */ vmm_printf("**** %s: vmm_manager done read\n",__func__);
+
+//	vmm_manager_guest_pause(i2c_imx->guest);
+	if (i2c_imx->num != 2) {
+		*val = i2c_imx->ret_val;
+		//*val = (buf[0] << 8) | buf[1];
+		return 0;
+	}
+	return VMM_OK;
+}
+
+
+static int call_i2c_transfer_write(struct i2c_imx_state *i2c_imx)
+{
+	/* __DEBUG__ */ vmm_printf("**** %s \n",__func__);
+
+	/* __DEBUG__ */ vmm_printf("**** %s: vmm_manager call write\n",__func__);
+	vmm_manager_guest_request(i2c_imx->guest, call_write, i2c_imx);
+	/* __DEBUG__ */ vmm_printf("**** %s: vmm_manager done write\n",__func__);
+
+//	vmm_manager_guest_pause(i2c_imx->guest);
 }
 
 
@@ -182,19 +279,26 @@ static int i2c_imx_reg_read(struct i2c_imx_state *i2c_imx,
 		if (i2c_imx->data_request)
 		{
 			i2c_imx->msg.flags = I2C_M_RD;
+			//i2c_imx->nb_buf++;
+			call_i2c_transfer_read(i2c_imx, dst);
 		}
 
 		/* Set IRQ */
 		if (i2c_imx->irq_level)
 		{
 			i2c_imx->i2c_I2SR |= I2SR_IIF;
+			/* deux read sont normalement appeler dans le fonction xfer, du coup au premier read
+			 * aller faire la demande au hard de la valeur pour la donner au dexième read */
+			/* mettre le ACK IRQ en mode read dans la fonction call_read, car cela permet de
+			 * gerer un ordonnancement avec le "thread de vmm_manager_guest_request */
 			vmm_devemu_emulate_irq(i2c_imx->guest, i2c_imx->irq, 1);
 		}
 		else
 		{
 			i2c_imx->i2c_I2SR |= I2SR_IIF;
 		}
-		*dst = (i2c_imx->i2c_I2DR & I2DR_RD_MASK);
+		//*dst = (i2c_imx->i2c_I2DR & I2DR_RD_MASK);
+		*dst = *(i2c_imx->ret_val);
 		/* __DEBUG__ */ vmm_printf("**** %s: read val=0x%08x \n",__func__,*dst);
 		break;
 
@@ -254,7 +358,6 @@ static int i2c_imx_emulator_read32(struct vmm_emudev *edev,
 /*************************************************/
 /********************* WRITE *********************/
 /*************************************************/
-
 static int i2c_imx_reg_write(struct i2c_imx_state *i2c_imx,
 				u32 offset,
 				u32 mask,
@@ -276,14 +379,20 @@ static int i2c_imx_reg_write(struct i2c_imx_state *i2c_imx,
 	case IMX_I2C_IFDR: /* i2c frequency divider */
 		i2c_imx->i2c_IFDR = (i2c_imx->i2c_IFDR & ~mask) | \
 				    (val & mask & IFDR_WR_MASK);
+		/* eventuellement mettre un warning si la valeur écrite est différente
+		 * de celle présente en hardware. Car elle est censé être en dur dans le dts */
 		break;
 
 	case IMX_I2C_I2CR: /* i2c control */
 		prev_I2CR = i2c_imx->i2c_I2CR;
 		i2c_imx->i2c_I2CR = (i2c_imx->i2c_I2CR & ~mask) | \
 				    (val & mask & I2CR_WR_MASK);
+		vmm_printf("**** %s: i2c_I2CR=0x%08x\n", __func__, i2c_imx->i2c_I2CR);
 
-		/* __DEBUG__ */
+		/* Si changement dans MSTA pour définir slave mode, mettre warning expliquant qu'on
+		 * ne gere pas le mode slave. Mais seulement le mode master */
+
+		/* Change MSTA register */
 		if ((i2c_imx->i2c_I2CR & I2CR_MSTA)!=(prev_I2CR & I2CR_MSTA)){
 			if (i2c_imx->i2c_I2CR & I2CR_MSTA)
 			{
@@ -301,10 +410,20 @@ static int i2c_imx_reg_write(struct i2c_imx_state *i2c_imx,
 				i2c_imx->data_request = false;
 				i2c_imx->i2c_I2SR &= ~I2SR_IBB;
 				/* if R/W=0 */
-//				if (!(i2c_imx->slave_addr && 0x1))
-//					call_i2c_transfer_write(i2c_imx);
+				if (!(i2c_imx->i2c_I2SR & I2SR_SRW))
+					call_i2c_transfer_write(i2c_imx);
 				vmm_printf("**** %s: |SEND msg [%d]| \n", __func__, i2c_imx->nb_buf);
 			}
+		}
+
+		/* if Transmit mode */
+		if(i2c_imx->i2c_I2CR & I2CR_MTX)
+		{
+			i2c_imx->i2c_I2SR |= I2SR_SRW;
+		}
+		else
+		{
+			i2c_imx->i2c_I2SR &= ~I2SR_SRW;
 		}
 
 		/* repeat start */
@@ -316,8 +435,8 @@ static int i2c_imx_reg_write(struct i2c_imx_state *i2c_imx,
 			i2c_imx->num = 0;
 			vmm_printf("**** %s: |SEND msg [%d]| \n", __func__, i2c_imx->nb_buf);
 			/* if R/W=0 */
-//			if (!(i2c_imx->slave_addr && 0x1))
-//				call_i2c_transfer_write(i2c_imx);
+			if (!(i2c_imx->i2c_I2SR & I2SR_SRW))
+				call_i2c_transfer_write(i2c_imx);
 			/* clear msg */
 			i2c_imx->nb_buf = 0;
 		}
@@ -376,11 +495,13 @@ static int i2c_imx_reg_write(struct i2c_imx_state *i2c_imx,
 		/* Recept slave addr */
 		if (i2c_imx->slave_addr_request)
 		{
+	/* if 0x1 => read */
 			i2c_imx->slave_addr_request = false;
 			i2c_imx->data_request = true;
 			i2c_imx->slave_addr = (val & mask & I2DR_WR_MASK);
 			i2c_imx->msg.addr = (val & mask & I2DR_WR_MASK) >> 1;
 			i2c_imx->nb_buf=0;
+			i2c_imx->msg.len = 0;
 			i2c_imx->msg.buf = i2c_imx->buf;
 			/* __DEBUG__ */ vmm_printf("**** %s: slave_addr=0x%08x \n",__func__,i2c_imx->slave_addr);
 		}
@@ -391,6 +512,7 @@ static int i2c_imx_reg_write(struct i2c_imx_state *i2c_imx,
 			i2c_imx->data = (val & mask & I2DR_WR_MASK);
 
 			i2c_imx->buf[i2c_imx->nb_buf] = (val & mask & I2DR_WR_MASK);
+
 			i2c_imx->nb_buf++;
 			if ( i2c_imx->nb_buf == 0) /* command */
 			{
@@ -511,6 +633,7 @@ static int i2c_imx_emulator_probe(struct vmm_guest *guest,
 	i2c_imx->data = 0x00000000;
 
 	i2c_imx->num = 0;
+	//tab_data[]
 	i2c_imx->adapter = NULL;
 
 	/* init irq */
@@ -521,12 +644,24 @@ static int i2c_imx_emulator_probe(struct vmm_guest *guest,
 	}
 	i2c_imx->irq_level = 0;
 
-
 	edev->priv = i2c_imx;
 
 	i2c_for_each_dev(edev, i2cimx_attach_adapter);
 
+//	/* __DEBUG__ */ vmm_printf("**** %s: init thread \n",__func__);
+//	i2c_imx->thread = vmm_threads_create(edev->node->name,
+//                                fonc_thread,
+//                                i2c_imx,
+//                                VMM_THREAD_MAX_PRIORITY,
+//                                VMM_VCPU_DEF_TIME_SLICE);
+//
+//        if (i2c_imx->thread == NULL) {
+//                vmm_free(i2c_imx);
+//                return VMM_EFAIL;
+//        }
+//vmm_threads_start(i2c_imx->thread);
 	INIT_SPIN_LOCK(&i2c_imx->lock);
+
 
 	return VMM_OK;
 }

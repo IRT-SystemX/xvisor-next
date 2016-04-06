@@ -276,10 +276,25 @@ static int simple_emulator_probe(struct vmm_guest *guest,
 			goto simple_emulator_probe_cleanupirqs_fail;
 		}
 
+                char *nn = vmm_malloc(10);
+                vmm_snprintf(nn, 10, "%i", s->host_irqs[i]);
+                nn[3] = 0;
+                nn[9] = 0;
+
+                rc = vmm_host_irq_register(s->host_irqs[i], nn, simple_routed_irq, NULL);
+                if (rc != VMM_OK){
+                        vmm_printf("**** Fail for irq %"PRIu32"!\n", s->host_irqs[i]);
+                        continue;
+                }
+
 		rc = vmm_devtree_irq_get(edev->node, &s->guest_irqs[i], i);
 		if (rc) {
 			goto simple_emulator_probe_cleanupirqs_fail;
 		}
+
+                vmm_printf("%s: binding guest IRQ %"PRIu32" to host IRQ %"PRIu32"\n",
+                           s->name, s->guest_irqs[i], s->host_irqs[i]);
+
 
 		rc = vmm_host_irq_mark_routed(s->host_irqs[i]);
 		if (rc) {
@@ -293,11 +308,13 @@ static int simple_emulator_probe(struct vmm_guest *guest,
 			goto simple_emulator_probe_cleanupirqs_fail;
 		}
 
+                vmm_host_irq_enable( s->host_irqs[i]);
+                vmm_host_irq_unmask( s->host_irqs[i]);
 		irq_reg_count++;
 	}
 
-        vmm_printf("%s: simple/pt. Memory flags: 0x%"PRIx32"\n",
-                   s->name, s->memory_pt);
+        vmm_printf("%s: simple/pt. Memory flags: 0x%"PRIx32". Verbosity: 0x%"PRIx32"\n",
+                   s->name, s->memory_pt, s->verbosity);
 	edev->priv = s;
 
 	return VMM_OK;
@@ -341,6 +358,7 @@ static int simple_emulator_remove(struct vmm_emudev *edev)
 	}
 	vmm_free(s);
 
+        vmm_printf("======= REMOVING %p %p\n", edev, edev->priv);
 	edev->priv = NULL;
 
 	return VMM_OK;
@@ -356,8 +374,8 @@ VMM_DECLARE_EMULATOR_SIMPLE(simple_emulator,
                             simple_emuid_table,
                             VMM_DEVEMU_NATIVE_ENDIAN,
                             simple_emulator_probe,
-                            simple_emulator_reset,
                             simple_emulator_remove,
+                            simple_emulator_reset,
                             simple_emulator_read,
                             simple_emulator_write);
 

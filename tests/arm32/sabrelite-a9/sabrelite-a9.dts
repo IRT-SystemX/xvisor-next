@@ -44,8 +44,11 @@
 			guest_physical_addr = <0x00130000>;
 			physical_size = <0x00004000>;
 			interrupts = <41>;
+			host-interrupts = <41>;
+			memory-passthrough = <0x3>;
+			verbosity = <0x3>;
 			device_type = "pt";
-			compatible = "dedicated";
+			compatible = "simple";
 		};
 
 		gpu_p2 {
@@ -54,8 +57,11 @@
 			guest_physical_addr = <0x00134000>;
 			physical_size = <0x00004000>;
 			interrupts = <42>;
+			host-interrupts = <42>;
+			memory-passthrough = <0x3>;
+			verbosity = <0x3>;
 			device_type = "pt";
-			compatible = "dedicated";
+			compatible = "simple";
 		};
 
 		gpu_p3 {
@@ -64,8 +70,11 @@
 			guest_physical_addr = <0x02204000>;
 			physical_size = <0x00004000>;
 			interrupts = <43>;
+			host-interrupts = <43>;
+			memory-passthrough = <0x3>;
+			verbosity = <0x3>;
 			device_type = "pt";
-			compatible = "dedicated";
+			compatible = "simple";
 		};
 
 		ocram {
@@ -110,8 +119,11 @@
 			guest_physical_addr = <0x02600000>;
 			physical_size = <0x00400000>;
 			interrupts = <37 38>;
+			host-interrupts = <37 38>;
+			memory-passthrough = <0x3>;
+			verbosity = <0x0>;
 			device_type = "pt";
-			compatible = "dedicated";
+			compatible = "simple";
 		};
 
 		ipu2 {
@@ -121,7 +133,10 @@
 			physical_size = <0x00400000>;
 			interrupts = <39 40>;
 			device_type = "pt";
-			compatible = "dedicated";
+			memory-passthrough = <0x3>;
+			verbosity = <0x0>;
+			compatible = "simple";
+			host-interrupts = <39 40>;
 		};
 
 		iomux {
@@ -129,8 +144,12 @@
 			address_type = "memory";
 			guest_physical_addr = <0x020e0000>;
 			physical_size = <0x4000>;
-			device_type = "misc";
-			compatible = "zero";
+			device_type = "pt";
+			memory-passthrough = <0x3>;
+			verbosity = <0x0>;
+			compatible = "simple";
+			host-interrupts = <32>;
+			interrupts = <32>;
 		};
 
 		dma_apbh {
@@ -232,6 +251,8 @@
 			address_type = "memory";
 			guest_physical_addr = <0x020ec000>;
 			physical_size = <0x4000>;
+			//device_type = "pt";
+			//compatible = "simple";
 			device_type = "misc";
 			compatible = "zero";
 		};
@@ -259,8 +280,12 @@
 			address_type = "memory";
 			guest_physical_addr = <0x02040000>;
 			physical_size = <0x0003c000>;
-			device_type = "misc";
-			compatible = "zero";
+			interrupts = <35 44>;
+			host-interrupts = <35 44>;
+			memory-passthrough = <0x3>;
+			verbosity = <0x0>;
+			device_type = "pt";
+			compatible = "simple";
 		};
 
 		/* /\* Emulate EPIT with a SP804 for now*\/ */
@@ -408,8 +433,12 @@
 			address_type = "memory";
 			guest_physical_addr = <0x020dc000>;
 			physical_size = <0x4000>;
-			device_type = "misc";
-			compatible = "zero";
+			interrupts = <121>;
+			host-interrupts = <121>;
+			device_type = "pt";
+			compatible = "simple";
+			memory-passthrough = <0x3>;
+			verbosity = <0x0>;
 		};
 
 		gpt: gpt@02098000 {

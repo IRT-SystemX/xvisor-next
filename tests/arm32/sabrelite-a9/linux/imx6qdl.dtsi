@@ -679,10 +679,13 @@
 				compatible = "fsl,imx6q-gpc";
 				reg = <0x020dc000 0x4000>;
 				interrupts = <0 89 0x04 0 90 0x04>;
+				interrupt-controller;
+				#interrupt-cells = <3>;
+				interrupt-parent = <&intc>;
 				clocks = <&clks 122>, <&clks 74>, <&clks 121>,
-					<&clks 26>, <&clks 143>, <&clks 168>, <&clks 62>;
+					<&clks 26>, <&clks 143>, <&clks 168>;
 				clock-names = "gpu3d_core", "gpu3d_shader", "gpu2d_core",
-					"gpu2d_axi", "openvg_axi", "vpu_axi", "ipg";
+					"gpu2d_axi", "openvg_axi", "vpu_axi";
 				pu-supply = <&reg_pu>;
 			};
 
@@ -822,15 +825,15 @@
 			/* 	clocks = <&clks 162>; */
 			/* }; */
 
-			/* fec: ethernet@02188000 { */
-			/* 	compatible = "fsl,imx6q-fec"; */
-			/* 	reg = <0x02188000 0x4000>; */
-			/* 	interrupts-extended = <&intc 0 118 0x04>, */
-			/* 			      <&intc 0 119 0x04>; */
-			/* 	clocks = <&clks 117>, <&clks 117>, <&clks 190>; */
-			/* 	clock-names = "ipg", "ahb", "ptp"; */
-			/* 	status = "disabled"; */
-			/* }; */
+			fec: ethernet@02188000 {
+				compatible = "fsl,imx6q-fec";
+				reg = <0x02188000 0x4000>;
+				interrupts-extended = <&intc 0 118 0x04>,
+						      <&intc 0 119 0x04>;
+				clocks = <&clks 117>, <&clks 117>, <&clks 190>;
+				clock-names = "ipg", "ahb", "ptp";
+				status = "disabled";
+			};
 
 			mlb: mlb@0218c000 {
 				compatible = "fsl,imx6q-mlb150";
@@ -914,6 +917,15 @@
 
 			romcp@021ac000 {
 				reg = <0x021ac000 0x4000>;
+			};
+
+			mmdc0: mmdc@021b0000 { /* MMDC0 */
+				compatible = "fsl,imx6q-mmdc";
+				reg = <0x021b0000 0x4000>;
+			};
+
+			mmdc1: mmdc@021b4000 { /* MMDC1 */
+				reg = <0x021b4000 0x4000>;
 			};
 
 			/* mmdc0-1@021b0000 { /\* MMDC0-1 *\/ */

@@ -70,6 +70,7 @@ void arm_board_linux_default_cmdline(char *cmdline, u32 cmdline_sz)
 	arm_strcat(cmdline,
                    " "
                    "virtio_mmio.device=4K@0x00118000:144 "
+                   "virtio_mmio.device=4K@0x00129000:145 "
                    "enable_wait_mode=off "
 		   "video=mxcfb0:dev=ldb,LDB-XGA,if=RGB666 "
                    "video=mxcfb1:off "

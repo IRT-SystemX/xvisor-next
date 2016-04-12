@@ -10,6 +10,7 @@
 		mem0 = &MEM0;
 		//net0 = &NET0;
 		disk0 = &DISK0;
+		i2c0 = &I2C0;
 	};
 
 	vcpus {
@@ -316,6 +317,17 @@
 			physical_size = <0x1000>;
 			blkdev = "mmc0p1"; // XXX: this is just the second partition on the sd card
 			interrupts = <144>;
+		};
+
+		I2C0: virtio-i2c0 {
+			manifest_type = "virtual";
+			address_type = "memory";
+			device_type = "virtio";
+			compatible = "virtio,mmio";
+			virtio_type = <65535>;
+			guest_physical_addr = <0x00129000>; /* In a "reserved" region */
+			physical_size = <0x1000>;
+			interrupts = <145>;
 		};
 
 		gpio1: gpio@0209c000 {

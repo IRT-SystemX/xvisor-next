@@ -128,6 +128,9 @@ struct vmm_emudev {
 	struct vmm_region *reg;
 	struct vmm_emulator *emu;
 	void *priv;
+#ifdef CONFIG_DEBUG_EMU
+	u32 debug_info;
+#endif
 };
 
 struct vmm_devemu_irqchip {

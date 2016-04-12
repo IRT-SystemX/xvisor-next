@@ -42,7 +42,8 @@ enum virtio_id {
 	VIRTIO_ID_IO_MEMORY,
 	VIRTIO_ID_RPMSG,
 	VIRTIO_ID_SCSI_HOST,
-	VIRTIO_ID_9P
+	VIRTIO_ID_9P,
+	VIRTIO_ID_I2C = 65535
 };
 
 struct virtio_device_id {

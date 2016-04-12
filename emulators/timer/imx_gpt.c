@@ -313,15 +313,15 @@ static void imx_gpt_event(struct vmm_timer_event *event)
 	int i = 0;
 	struct gpt_t *gpt = event->priv;
 
+	/* Is the GPT enabled? */
+	if (!(gpt->control & 1)) {
+		return;
+	}
+
 	vmm_write_lock(&gpt->lock);
 	for (i = 0; i < ARRAY_SIZE(gpt->event); ++i) {
 		if (event == &gpt->event[i]) {
 			u32 cnt;
-
-			/* Is the GPT enabled? */
-			if (!(gpt->control & 1)) {
-				return;
-			}
 
 			_imx_gpt_cnt_update(gpt, i, &cnt);
 			gpt->status |= 1 << i;

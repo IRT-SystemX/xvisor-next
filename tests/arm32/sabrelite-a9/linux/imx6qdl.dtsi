@@ -732,6 +732,36 @@
 				status = "disabled";
 			};
 
+			i2c1: virtio_i2c@021a0000 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				compatible = "virtio,mmio";
+				reg = <0x021a0000 0x4000>;
+				interrupts = <0 36 0x04>;
+				clocks = <&clks 125>;
+				status = "disabled";
+			};
+
+			i2c2: virtio_i2c@021a4000 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				compatible = "virtio,mmio";
+				reg = <0x021a4000 0x4000>;
+				interrupts = <0 37 0x04>;
+				clocks = <&clks 125>;
+				status = "disabled";
+			};
+
+			i2c3: virtio_i2c@021a8000 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				compatible = "virtio,mmio";
+				reg = <0x021a8000 0x4000>;
+				interrupts = <0 38 0x04>;
+				clocks = <&clks 125>;
+				status = "disabled";
+			};
+
 			romcp@021ac000 {
 				reg = <0x021ac000 0x4000>;
 			};

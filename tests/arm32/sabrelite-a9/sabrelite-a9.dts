@@ -9,6 +9,10 @@
 	aliases {
 		mem0 = &MEM0;
 		net0 = &NET0;
+		disk0 = &DISK0;
+		i2c0 = &I2C0;
+		i2c1 = &I2C1;
+		i2c2 = &I2C2;
 	};
 
 	vcpus {
@@ -306,6 +310,42 @@
 			physical_size = <0x1000>;
 			switch = ""; /* Override this before guest creation */
 			interrupts = <42>;
+		};
+
+		I2C0: virtio-i2c0@021a0000 {
+			manifest_type = "virtual";
+			address_type = "memory";
+			device_type = "virtio";
+			compatible = "virtio,mmio";
+			virtio_type = <65535>;
+			guest_physical_addr = <0x021a0000>;
+			physical_size = <0x4000>;
+			interrupts = <68>;
+			i2c_attach = "i2c@021a0000";
+		};
+
+		I2C1: virtio-i2c1@021a4000 {
+			manifest_type = "virtual";
+			address_type = "memory";
+			device_type = "virtio";
+			compatible = "virtio,mmio";
+			virtio_type = <65535>;
+			guest_physical_addr = <0x021a4000>;
+			physical_size = <0x4000>;
+			interrupts = <69>;
+			i2c_attach = "i2c@021a4000";
+		};
+
+		I2C2: virtio-i2c2@021a8000 {
+			manifest_type = "virtual";
+			address_type = "memory";
+			device_type = "virtio";
+			compatible = "virtio,mmio";
+			virtio_type = <65535>;
+			guest_physical_addr = <0x021a8000>;
+			physical_size = <0x4000>;
+			interrupts = <70>;
+			i2c_attach = "i2c@021a8000";
 		};
 
 		gpio1: gpio@0209c000 {

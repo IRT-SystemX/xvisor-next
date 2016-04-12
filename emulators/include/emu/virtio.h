@@ -50,6 +50,7 @@ enum virtio_id {
 	VIRTIO_ID_GPU		= 16, /* GPU device */
 	VIRTIO_ID_TIMER		= 17, /* Timer/Clock device */
 	VIRTIO_ID_INPUT		= 18, /* Input device */
+	VIRTIO_ID_I2C		= 65535, /* I2C */
 };
 
 struct virtio_device_id {

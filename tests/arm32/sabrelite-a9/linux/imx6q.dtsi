@@ -94,24 +94,6 @@
 			fsl,max_ddr_freq = <528000000>;
 		};
 
-		gpu: gpu@00130000 {
-			compatible = "fsl,imx6q-gpu";
-			reg = <0x00130000 0x4000>, <0x00134000 0x4000>,
-			      <0x02204000 0x4000>, <0x0 0x0>;
-			reg-names = "iobase_3d", "iobase_2d",
-				    "iobase_vg", "phys_baseaddr";
-			interrupts = <0 9 0x04>, <0 10 0x04>,<0 11 0x04>;
-			interrupt-names = "irq_3d", "irq_2d", "irq_vg";
-			clocks = <&clks 26>, <&clks 143>,
-				 <&clks 27>, <&clks 121>,
-				 <&clks 122>, <&clks 74>;
-			clock-names = "gpu2d_axi_clk", "openvg_axi_clk",
-				      "gpu3d_axi_clk", "gpu2d_clk",
-				      "gpu3d_clk", "gpu3d_shader_clk";
-			resets = <&src 0>, <&src 3>, <&src 3>;
-			reset-names = "gpu3d", "gpu2d", "gpuvg";
-			pu-supply = <&reg_pu>;
-		};
 
 		ocram: sram@00900000 {
 			compatible = "mmio-sram";
@@ -176,6 +158,16 @@
 			};
 		};
 
+		gpu_vg: gpu@02204000 {
+			compatible = "vivante,gc";
+			reg = <0x02204000 0x4000>;
+			interrupts = <0 11 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&clks 143>, /* IMX6QDL_CLK_OPENVG_AXI */
+				 <&clks 121>; /* IMX6QDL_CLK_GPU2D_CORE */
+			clock-names = "bus", "core";
+			power-domains = <&gpc 1>;
+		};
+
 		/* aips-bus@02100000 { /\* AIPS2 *\/ */
 		/* 	mipi_dsi: mipi@021e0000 { */
 		/* 		compatible = "fsl,imx6q-mipi-dsi"; */
@@ -212,6 +204,11 @@
 		/* 	resets = <&src 4>; */
 		/* 	bypass_reset = <0>; */
 		/* }; */
+	};
+
+	gpu-subsystem {
+		compatible = "fsl,imx-gpu-subsystem";
+		cores = <&gpu_2d>, <&gpu_3d>, <&gpu_vg>;
 	};
 };
 

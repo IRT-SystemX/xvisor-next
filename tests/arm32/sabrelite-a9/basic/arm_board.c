@@ -69,7 +69,7 @@ void arm_board_linux_default_cmdline(char *cmdline, u32 cmdline_sz)
 	/* SabreLite/Nitrogen6X specific */
 	arm_strcat(cmdline,
                    " "
-//                   "virtio_mmio.device=4K@0x00118000:144 "
+                   "virtio_mmio.device=4K@0x00118000:144 " /* Virtio blk */
 //                   "virtio_mmio.device=4K@0x0220d000:145 " /* virtio console */
                    "enable_wait_mode=off "
 		   "video=mxcfb0:dev=ldb,LDB-XGA,if=RGB666 "

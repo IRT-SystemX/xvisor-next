@@ -59,26 +59,27 @@ _irq_get(struct vmm_devtree_node *node,
          u32                     *irq,
          int                     index)
 {
-        u32 alen;
         const char *aval;
 
         if (!node || !irq || index < 0) {
                 return VMM_EFAIL;
         }
 
-        aval = vmm_devtree_attrval(node, VMM_DEVTREE_INTERRUPTS_ATTR_NAME);
-        if (!aval) {
-                return VMM_ENOTAVAIL;
-        }
+        *irq = vmm_devtree_irq_parse_map(node, index);
 
-        alen = vmm_devtree_attrlen(node, VMM_DEVTREE_INTERRUPTS_ATTR_NAME);
-        if (alen <= (index * sizeof(u32))) {
-                return VMM_ENOTAVAIL;
-        }
+   //     aval = vmm_devtree_attrval(node, VMM_DEVTREE_INTERRUPTS_ATTR_NAME);
+   //     if (!aval) {
+   //             return VMM_ENOTAVAIL;
+   //     }
 
-        aval += (index * sizeof(u32) * 3) + sizeof(u32); // FIXME
-        *irq  = vmm_be32_to_cpu(*((u32 *)aval));
-        *irq += 32; // FIXME
+   //     alen = vmm_devtree_attrlen(node, VMM_DEVTREE_INTERRUPTS_ATTR_NAME);
+   //     if (alen <= (index * sizeof(u32))) {
+   //             return VMM_ENOTAVAIL;
+   //     }
+
+   //     aval += (index * sizeof(u32) * 3) + sizeof(u32); // FIXME
+   //     *irq  = vmm_be32_to_cpu(*((u32 *)aval));
+   //     *irq += 32; // FIXME
 
         return VMM_OK;
 
@@ -87,12 +88,14 @@ _irq_get(struct vmm_devtree_node *node,
 static vmm_irq_return_t
 _irq(int no, void *dev)
 {
+        vmm_printf("~~~ IRQ %i handled\n", no);
         return VMM_IRQ_HANDLED;
 }
 
 static int bootstrap_probe(struct vmm_device               *dev,
                            const struct vmm_devtree_nodeid *nid)
 {
+        return VMM_OK;
         int rc = VMM_OK;
         unsigned int i;
         u32 irqs, it;
@@ -128,11 +131,12 @@ static int bootstrap_probe(struct vmm_device               *dev,
                         const u32 i = b->irqs[it];
                         dev_info(dev, "Enabling irq %"PRIu32"\n", i);
                         //snprintf(buf, sizeof(buf), "%s%"PRIu32, dev->name, it);
-                        char *name = vmm_malloc(10);
+                        char *name = vmm_malloc(9);
                         name[0] = 'G';
                         name[1] = 'P';
                         name[2] = 'U';
                         name[3] = '\0';
+
                         rc = vmm_host_irq_register(i, name, _irq, NULL);
                         if (VMM_OK != rc) {
                                 dev_crit(dev->of_node, "Failed to register IRQ %d\n", b->irqs[it]);
@@ -151,33 +155,17 @@ static int bootstrap_probe(struct vmm_device               *dev,
         char *clk[10];
         vmm_devtree_read_clock_names_array(dev->of_node, clk, clocks);
 
-        for (x = 0; x < clocks; ++x) {
-                vmm_printf("[%i/%"PRIu32"] => {%s}\n", x + 1, clocks, clk[x]);
-                c = of_clk_get(dev->of_node, x);
-                if (!VMM_IS_ERR_OR_NULL(c)) {
-                        rc = clk_prepare_enable(c);
-                        if (rc != VMM_OK) {
-                                dev_crit(dev->of_node, "Fail");
-                        }
-
-                }
-        }
-        
-    //    for (x = 0; x < clocks; ++x) {
-    //            c = clk_get(dev, clk[x]);
-    //            clk_enable(c);
-    //    }
-
-
-
-//        irqs_len = vmm_devtree_attrlen(dev->of_node, VMM_DEVTREE_INTERRUPTS_ATTR_NAME);
-//        if (irqs_len > 0) {
-//        }
-//        dev_info(dev, "Len is %"PRIu32"\n", irqs_len);
-//        rc = vmm_devtree_read_u32_array(dev->of_node,
-//                                        VMM_DEVTREE_INTERRUPTS_ATTR_NAME,
-//                                        b->irqs, array_size(b->irqs));
+//        for (x = 0; x < clocks; ++x) {
+//                vmm_printf("[%i/%"PRIu32"] => {%s}\n", x + 1, clocks, clk[x]);
+//                c = of_clk_get(dev->of_node, x);
+//                if (!VMM_IS_ERR_OR_NULL(c)) {
+//                        rc = clk_prepare_enable(c);
+//                        if (rc != VMM_OK) {
+//                                dev_crit(dev->of_node, "Fail");
+//                        }
 //
+//                }
+//        }
 
         return VMM_OK;
 

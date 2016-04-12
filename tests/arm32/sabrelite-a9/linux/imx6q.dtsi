@@ -80,6 +80,12 @@
 			interrupts = <0 112 0x04>;
 		};
 
+		virtio_i2c@00129000 {
+			compatible = "virtio,mmio";
+			reg = <0x00129000 0x1000>;
+			interrupts = <0 113 0x04>;
+		};
+
 		ocram: sram@00900000 {
 			compatible = "mmio-sram";
 			reg = <0x00904000 0x3C000>;

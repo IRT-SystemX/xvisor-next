@@ -122,7 +122,7 @@
 		ipu1 {
 			manifest_type = "virtual";
 			address_type = "memory";
-			guest_physical_addr = <0x02600000>;
+			guest_physical_addr = <0x02400000>;
 			physical_size = <0x00400000>;
 			interrupts = <37 38>;
 			host-interrupts = <37 38>;

@@ -13,6 +13,7 @@
 #include "skeleton.dtsi"
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/clock/imx6qdl-clock.h>
 
 / {
 	aliases {
@@ -1075,19 +1076,74 @@
 		};
 
 		ipu1: ipu@02400000 {
+			#address-cells = <1>;
+			#size-cells = <0>;
 			compatible = "fsl,imx6q-ipu";
 			reg = <0x02400000 0x400000>;
 			interrupts = <0 6 0x4 0 5 0x4>;
-			clocks = <&clks 130>, <&clks 131>, <&clks 132>,
-				 <&clks 39>, <&clks 40>,
-				 <&clks 135>, <&clks 136>,
-				 <&clks 8>, <&clks 195>;
-			clock-names = "bus", "di0", "di1",
-				      "di0_sel", "di1_sel",
-				      "ldb_di0", "ldb_di1",
-				      "540m", "video_pll";
+			clocks = <&clks IMX6QDL_CLK_IPU1>,
+				 <&clks IMX6QDL_CLK_IPU1_DI0>,
+				 <&clks IMX6QDL_CLK_IPU1_DI1>;
+			clock-names = "bus", "di0", "di1";
 			resets = <&src 2>;
-			bypass_reset = <0>;
+
+			ipu1_csi0: port@0 {
+				reg = <0>;
+			};
+
+			ipu1_csi1: port@1 {
+				reg = <1>;
+			};
+
+		//	ipu1_di0: port@2 {
+		//		#address-cells = <1>;
+		//		#size-cells = <0>;
+		//		reg = <2>;
+
+		//		ipu1_di0_disp0: endpoint@0 {
+		//		};
+
+		//		ipu1_di0_hdmi: endpoint@1 {
+		//			remote-endpoint = <&hdmi_mux_0>;
+		//		};
+
+		//		ipu1_di0_mipi: endpoint@2 {
+		//			remote-endpoint = <&mipi_mux_0>;
+		//		};
+
+		//		ipu1_di0_lvds0: endpoint@3 {
+		//			remote-endpoint = <&lvds0_mux_0>;
+		//		};
+
+		//		ipu1_di0_lvds1: endpoint@4 {
+		//			remote-endpoint = <&lvds1_mux_0>;
+		//		};
+		//	};
+
+		//	ipu1_di1: port@3 {
+		//		#address-cells = <1>;
+		//		#size-cells = <0>;
+		//		reg = <3>;
+
+		//		ipu1_di0_disp1: endpoint@0 {
+		//		};
+
+		//		ipu1_di1_hdmi: endpoint@1 {
+		//			remote-endpoint = <&hdmi_mux_1>;
+		//		};
+
+		//		ipu1_di1_mipi: endpoint@2 {
+		//			remote-endpoint = <&mipi_mux_1>;
+		//		};
+
+		//		ipu1_di1_lvds0: endpoint@3 {
+		//			remote-endpoint = <&lvds0_mux_1>;
+		//		};
+
+		//		ipu1_di1_lvds1: endpoint@4 {
+		//			remote-endpoint = <&lvds1_mux_1>;
+		//		};
+		//	};
 		};
 
 		gpu_3d: gpu@00130000 {

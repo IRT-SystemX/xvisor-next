@@ -260,3 +260,13 @@ void __init imx_gpc_init(void)
 	/* gic_arch_extn.irq_unmask = imx_gpc_irq_unmask; */
 	/* gic_arch_extn.irq_set_wake = imx_gpc_irq_set_wake; */
 }
+
+void imx_gpc_write_reg(unsigned long offset, u32 reg)
+{
+	writel_relaxed(reg, gpc_base + offset);
+}
+
+u32 imx_gpc_read_reg(unsigned long offset)
+{
+	return readl_relaxed(gpc_base + offset);
+}

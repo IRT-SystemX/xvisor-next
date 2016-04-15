@@ -38,7 +38,7 @@
 			device_type = "alloced_ram";
 		};
 
-		gpu_p1 {
+		gpu_3d {
 			manifest_type = "virtual";
 			address_type = "memory";
 			guest_physical_addr = <0x00130000>;
@@ -53,7 +53,7 @@
 			//compatible = "zero";
 		};
 
-		gpu_p2 {
+		gpu_2d {
 			manifest_type = "virtual";
 			address_type = "memory";
 			guest_physical_addr = <0x00134000>;
@@ -68,7 +68,7 @@
 			//compatible = "zero";
 		};
 
-		gpu_p3 {
+		gpu_vg {
 			manifest_type = "virtual";
 			address_type = "memory";
 			guest_physical_addr = <0x02204000>;

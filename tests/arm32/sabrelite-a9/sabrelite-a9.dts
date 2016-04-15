@@ -515,12 +515,26 @@
 			physical_size = <0x4000>;
 			interrupts = <121>;
 			host-interrupts = <121>;
-			device_type = "misc";
-			compatible = "zero";
-		//	device_type = "pt";
-		//	compatible = "simple";
-			memory-passthrough = <0x3>;
-			verbosity = <0x0>;
+			device_type = "pt";
+			compatible = "imx6q-gpc";
+			debug = <0xffffffff>;
+			/* CNTR Mask:
+			 *  - GPCIRQM
+			 *  - DVFS0CR
+			 *  - gpu_vpu_pup_req
+			 *  - gpu_vpu_pdn_req */
+			cntr-mask = <0x00210003>;
+
+			imr-masks = <0x00001fe8>, /* VPU, IPUs, GPU2D, GPU3D */
+				<0x00000000>,
+				<0x00000000>,
+				<0x00000000>;
+
+			//pgcr-mask = <0x00000001>; /* Power control */
+			pupscr-mask = <0x00003f3f>; /* All non-reserved fields */
+			pdnscr-mask = <0x00003f3f>; /* All non-reserved fields */
+			pgsr-mask = <0x00000001>; /* Power control status */
+
 		};
 
 		gpt: gpt@02098000 {

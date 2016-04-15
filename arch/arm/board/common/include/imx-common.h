@@ -50,5 +50,7 @@ struct clk* imx_clk_get(unsigned int clkid);
 void imx_gpc_gpu_power_on(void);
 void imx_gpc_gpu_power_off(void);
 void imx_gpc_clocks_init(void);
+void imx_gpc_write_reg(unsigned long offset, u32 reg);
+u32 imx_gpc_read_reg(unsigned long offset);
 
 #endif

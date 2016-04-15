@@ -300,14 +300,11 @@
 			address_type = "memory";
 			guest_physical_addr = <0x020ec000>;
 			physical_size = <0x4000>;
-			device_type = "pt";
-			compatible = "simple";
 			memory-passthrough = <0x3>;
 			interrupts = <34>;
 			host-interrupts = <34>;
-			verbosity = <0x3>;
-			//device_type = "misc";
-			//compatible = "zero";
+			device_type = "misc";
+			compatible = "zero";
                 };
 
                 asrc {

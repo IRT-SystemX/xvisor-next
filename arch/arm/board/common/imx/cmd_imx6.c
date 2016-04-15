@@ -140,6 +140,7 @@ static void cmd_imx6_usage(struct vmm_chardev *cdev)
 	vmm_cprintf(cdev, "Usage:\n");
 	vmm_cprintf(cdev, "   imx6 uart X - Display UARTX info\n");
 	vmm_cprintf(cdev, "   imx6 clocks - Display i.MX6 clock tree\n");
+	vmm_cprintf(cdev, "   imx6 gpu {on,off} - Power GPU ON/OFF\n");
 }
 
 static int cmd_imx6_help(struct vmm_chardev *cdev,
@@ -147,6 +148,28 @@ static int cmd_imx6_help(struct vmm_chardev *cdev,
 			 char __unused **argv)
 {
 	cmd_imx6_usage(cdev);
+
+	return VMM_OK;
+}
+
+static int cmd_imx6_gpu(struct vmm_chardev *cdev,
+			int argc,
+			char **argv)
+{
+	if (argc != 3) {
+		cmd_imx6_usage(cdev);
+		return VMM_EFAIL;
+	}
+	char const *const cmd = argv[2];
+	if (!strcmp(cmd, "on")) {
+		imx_gpc_gpu_power_on();
+	} else if (!strcmp(cmd, "off")) {
+		imx_gpc_gpu_power_off();
+	} else {
+		cmd_imx6_usage(cdev);
+		return VMM_EFAIL;
+	}
+
 	return VMM_OK;
 }
 
@@ -157,6 +180,7 @@ static const struct {
 	{"help", cmd_imx6_help},
 	{"uart", cmd_imx6_uart},
 	{"clocks", cmd_imx6_clocks},
+	{"gpu", cmd_imx6_gpu},
 	{NULL, NULL},
 };
 

@@ -186,6 +186,50 @@ void __init imx_gpc_clocks_init(void)
 	}
 }
 
+void imx_gpc_gpu_power_on(void)
+{
+	int sw, sw2iso;
+	u32 val;
+
+	/* Gate off PU domain when GPU/VPU when powered down */
+	writel_relaxed(0x1, gpc_base + GPC_PGC_GPU_PDN);
+
+	/* Read ISO and ISO2SW power down delays */
+	val = readl_relaxed(gpc_base + GPC_PGC_GPU_PUPSCR);
+	sw = val & 0x3f;
+	sw2iso = (val >> 8) & 0x3f;
+
+	/* Request GPC to power up GPU/VPU */
+	val = readl_relaxed(gpc_base + GPC_CNTR);
+	val |= GPU_VPU_PUP_REQ;
+	writel_relaxed(val, gpc_base + GPC_CNTR);
+
+	/* Wait ISO + ISO2SW IPG clock cycles */
+	ndelay((sw + sw2iso) * 1000 / 66);
+}
+
+void imx_gpc_gpu_power_off(void)
+{
+	int iso, iso2sw;
+	u32 val;
+
+	/* Read ISO and ISO2SW power down delays */
+	val = readl_relaxed(gpc_base + GPC_PGC_GPU_PDNSCR);
+	iso = val & 0x3f;
+	iso2sw = (val >> 8) & 0x3f;
+
+	/* Gate off PU domain when GPU/VPU when powered down */
+	writel_relaxed(0x1, gpc_base + GPC_PGC_GPU_PDN);
+
+	/* Request GPC to power down GPU/VPU */
+	val = readl_relaxed(gpc_base + GPC_CNTR);
+	val |= GPU_VPU_PDN_REQ;
+	writel_relaxed(val, gpc_base + GPC_CNTR);
+
+	/* Wait ISO + ISO2SW IPG clock cycles */
+	ndelay((iso + iso2sw) * 1000 / 66);
+}
+
 void __init imx_gpc_init(void)
 {
 	struct device_node *np;

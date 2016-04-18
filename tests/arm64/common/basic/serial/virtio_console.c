@@ -34,7 +34,7 @@ void virtio_console_printch(physical_addr_t base, char ch)
 		return;
 	}
 
-	tmp = arm_readl((void *)(base + VIRTIO_MMIO_HOST_FEATURES));
+	tmp = arm_readl((void *)(base + VIRTIO_MMIO_DEVICE_FEATURES));
 	if (!(tmp & (1 << VIRTIO_CONSOLE_F_EMERG_WRITE))) {
 		return;
 	}
@@ -52,7 +52,7 @@ char virtio_console_getch(physical_addr_t base)
 		return 0;
 	}
 
-	tmp = arm_readl((void *)(base + VIRTIO_MMIO_HOST_FEATURES));
+	tmp = arm_readl((void *)(base + VIRTIO_MMIO_DEVICE_FEATURES));
 	if (!(tmp & (1 << VIRTIO_CONSOLE_F_EMERG_WRITE))) {
 		return 0;
 	}

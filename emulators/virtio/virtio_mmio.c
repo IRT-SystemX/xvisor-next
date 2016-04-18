@@ -63,7 +63,7 @@ int virtio_mmio_config_read(struct virtio_mmio_dev *m,
 	case VIRTIO_MMIO_INTERRUPT_STATUS:
 		*(u32 *)dst = (*(u32 *)(((void *)&m->config) + offset));
 		break;
-	case VIRTIO_MMIO_HOST_FEATURES:
+	case VIRTIO_MMIO_DEVICE_FEATURES:
 		*(u32 *)dst = m->dev.emu->get_host_features(&m->dev);
 		break;
 	case VIRTIO_MMIO_QUEUE_PFN:
@@ -101,13 +101,13 @@ static int virtio_mmio_config_write(struct virtio_mmio_dev *m,
 	u32 val = *(u32 *)(src);
 
 	switch (offset) {
-	case VIRTIO_MMIO_HOST_FEATURES_SEL:
-	case VIRTIO_MMIO_GUEST_FEATURES_SEL:
+	case VIRTIO_MMIO_DEVICE_FEATURES_SEL:
+	case VIRTIO_MMIO_DRIVER_FEATURES_SEL:
 	case VIRTIO_MMIO_QUEUE_SEL:
 	case VIRTIO_MMIO_STATUS:
 		*(u32 *)(((void *)&m->config) + offset) = val;
 		break;
-	case VIRTIO_MMIO_GUEST_FEATURES:
+	case VIRTIO_MMIO_DRIVER_FEATURES:
 		if (m->config.guest_features_sel == 0)  {
 			m->dev.emu->set_guest_features(&m->dev, val);
 		}

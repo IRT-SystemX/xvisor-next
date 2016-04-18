@@ -63,23 +63,17 @@ u32 arm_board_linux_machine_type(void)
 
 void arm_board_linux_default_cmdline(char *cmdline, u32 cmdline_sz)
 {
-	arm_strcpy(cmdline, "root=/dev/ram rw earlyprintk");
-        /* VirtIO Network Device */
-        //arm_strcat(cmdline, " virtio_mmio.device=64K@0x20100000:42"); // FIXME Bad IRQ
-	/* SabreLite/Nitrogen6X specific */
-	arm_strcat(cmdline,
-                   " "
-                   "virtio_mmio.device=4K@0x00118000:144 " /* Virtio blk */
-//                   "virtio_mmio.device=4K@0x0220d000:145 " /* virtio console */
-                   "enable_wait_mode=off "
+	arm_strcpy(cmdline,
+		   "root=/dev/ram rw earlyprintk "
+		   "enable_wait_mode=off "
 		   "video=mxcfb0:dev=ldb,LDB-XGA,if=RGB666 "
-                   "video=mxcfb1:off "
+		   "video=mxcfb1:off "
 		   "video=mxcfb2:off "
-                   "video=mxcfb3:off "
-                   "fbmem=10M "
+		   "video=mxcfb3:off "
+		   "fbmem=10M "
 		   "console=ttymxc1,115200 "
-                   "vmalloc=400M "
-                   "consoleblank=0 "
+		   "vmalloc=400M "
+		   "consoleblank=0 "
 		   "mxc_hdmi.only_cea=1");
 }
 

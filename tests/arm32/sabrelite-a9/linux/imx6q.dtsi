@@ -73,15 +73,12 @@
 		/* }; */
 	};
 
-//	vio {
-//		virtio_block@00118000 {
-//			compatible = "virtio,mmio";
-//			reg = <0x00118000 0x1000>;
-//			interrupts = <144>;
-//		};
-//	};
-
 	soc {
+		virtio_block@00118000 {
+			compatible = "virtio,mmio";
+			reg = <0x00118000 0x1000>;
+			interrupts = <0 112 0x04>;
+		};
 
 		busfreq { /* BUSFREQ */
 			compatible = "fsl,imx6_busfreq";

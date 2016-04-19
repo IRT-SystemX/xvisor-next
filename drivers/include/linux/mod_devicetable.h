@@ -311,11 +311,14 @@ struct bcma_device_id {
 #define BCMA_ANY_REV		0xFF
 #define BCMA_ANY_CLASS		0xFF
 
+/* Already define in virtio.h */
+#ifndef __VIRTIO_H__
 struct virtio_device_id {
 	__u32 device;
 	__u32 vendor;
 };
 #define VIRTIO_DEV_ANY_ID	0xffffffff
+#endif
 
 /* i2c */
 

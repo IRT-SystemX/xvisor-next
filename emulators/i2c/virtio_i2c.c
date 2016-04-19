@@ -137,6 +137,10 @@ vmm_printf("---- %s: msg_inf: addr=0x%016x | flags=0x%016x | len=0x%016x\n",__fu
 
 			virtio_queue_set_used_elem(vq, head, total_len);
 
+			vmm_printf("---- %s: signal \n",__func__);
+			if (virtio_queue_should_signal(vq)) {
+				vdev->tra->notify(vdev, VIRTIO_I2C_OUT_QUEUE);
+			}
 		}
 	}
 	vmm_printf("---- %s: end \n",__func__);

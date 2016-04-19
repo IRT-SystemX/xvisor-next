@@ -10,7 +10,7 @@
 		mem0 = &MEM0;
 		//net0 = &NET0;
 		disk0 = &DISK0;
-		i2c0 = &I2C0;
+		//i2c0 = &I2C0;
 	};
 
 	vcpus {

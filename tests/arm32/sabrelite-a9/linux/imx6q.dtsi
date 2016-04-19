@@ -80,7 +80,7 @@
 			interrupts = <144>;
 		};
 
-		virtio_i2c@00129000 {
+		virtio_i2c0@00129000 {
 			compatible = "virtio,mmio";
 			reg = <0x00129000 0x1000>;
 			interrupts = <145>;

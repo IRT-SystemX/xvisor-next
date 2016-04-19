@@ -13,6 +13,7 @@
 #include <linux/types.h>
 #include <emu/virtio.h>
 #include <emu/virtio_i2c.h>
+#include <linux/i2c.h>
 
 #define MODULE_DESC			"VirtIO i2c Emulator"
 #define MODULE_AUTHOR			"Mickaël Tansorier"
@@ -40,8 +41,41 @@ struct virtio_i2c_dev {
 	char name[VIRTIO_DEVICE_MAX_NAME_LEN];
 //	struct vmm_vserial *vser;
 //	struct fifo *emerg_rd;
+
+	struct i2c_adapter *adapter;
+	struct i2c_msg msg;
+
 };
 
+
+/*************************************************/
+/********************* FONC **********************/
+/*************************************************/
+
+static int i2cimx_attach_adapter(struct device *dev, void *dummy)
+{
+	struct i2c_adapter *adap;
+	struct virtio_device *virtiodev;
+	struct virtio_i2c_dev *i2cdev;
+
+	/* get adapter */
+	if (dev->type != &i2c_adapter_type)
+		return VMM_EINVALID;
+	adap = to_i2c_adapter(dev);
+
+	/* set right adapter to i2c_imx_state */
+	virtiodev = dummy;
+	i2cdev = virtiodev->emu_data;
+
+	vmm_printf("---- %s: adapter %s is find \n",__func__, adap->name);
+	if (strcmp(adap->name, "i2c@021a0000") == 0)
+	{
+		i2cdev->adapter = adap;
+		vmm_printf("---- %s: adapter %s is set \n",__func__, adap->name);
+	}
+
+	return VMM_OK;
+}
 
 /********************************/
 /* VirtIO operations */
@@ -202,6 +236,12 @@ static int virtio_i2c_connect(struct virtio_device *dev,
 	vmm_printf("**** %s: name=%s\n", __func__, i2cdev->name);
 
 	dev->emu_data = i2cdev;
+
+	/* Get adapters */
+	i2cdev->adapter = NULL;
+	i2c_for_each_dev(dev, i2cimx_attach_adapter);
+
+	rt_mutex_init(&i2cdev->adapter->bus_lock);
 
 	return VMM_OK;
 }

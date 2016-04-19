@@ -47,6 +47,14 @@ struct virtio_i2c_dev {
 
 };
 
+struct msg_info
+{
+	__u16 addr;
+	__u16 flags;
+	__u16 len;
+};
+//__u8 *msg_buf;
+
 
 /*************************************************/
 /********************* FONC **********************/
@@ -77,6 +85,129 @@ static int i2cimx_attach_adapter(struct device *dev, void *dummy)
 	return VMM_OK;
 }
 
+static void orphan_i2c_transfer(struct vmm_guest * guest, void *param){
+        vmm_printf("=>|orphan_i2c_transfer|\n");
+
+        struct virtio_i2c_dev *vi2cdev = param;
+	u16 head = 0;
+	u32 i = 0, iov_cnt = 0, total_len = 0;
+	struct virtio_queue *vq = &vi2cdev->vqs[VIRTIO_I2C_OUT_QUEUE];
+	struct virtio_iovec *iov = vi2cdev->in_iov;
+	struct virtio_device *vdev = vi2cdev->vdev;
+	struct msg_info msg_informaiton;
+	__u8 *msg_buffer;
+
+	vmm_printf("---- %s: name=%s\n", __func__,vi2cdev->name);
+
+	vmm_printf("---- %s: i2c_transfer: call  \n",__func__);
+	int ret = i2c_transfer(vi2cdev->adapter, &vi2cdev->msg, 1);
+	if (ret < 1) vmm_printf("---- %s: i2c_transfer: ERROR return=%d \n",__func__, ret);
+	vmm_printf("---- %s: i2c_transfer: done  \n",__func__);
+
+	/* print msgs recv */
+	vmm_printf("---- %s: msg_inf: addr=0x%016x | flags=0x%016x | len=0x%016x\n",__func__, vi2cdev->msg.addr, vi2cdev->msg.flags, vi2cdev->msg.len);
+	for (i=0;i<vi2cdev->msg.len;i++)
+		vmm_printf("---- %s: buf[%d] = 0x%08x\n",__func__, i, vi2cdev->msg.buf[i]);
+
+	/* transfer new val */
+	msg_informaiton.addr = vi2cdev->msg.addr;
+	msg_informaiton.flags = vi2cdev->msg.flags;
+	msg_informaiton.len = vi2cdev->msg.len;
+	msg_buffer = vmm_zalloc(sizeof(__u8)*vi2cdev->msg.len);
+	for(i=0; i < vi2cdev->msg.len; i++)
+		msg_buffer[i] = vi2cdev->msg.buf[i];
+
+	vmm_printf("---- %s: virtio_queue_available ?\n",__func__);
+	if (virtio_queue_available(vq)) {
+		vmm_printf("---- %s: virtio_queue_available OK\n",__func__);
+		head = virtio_queue_get_iovec(vq, iov, &iov_cnt, &total_len);
+		if (iov_cnt) {
+			/* print info size */
+			vmm_printf("---- %s: write: iov_cnt=%d | total_len=%d | msg_informaiton_size=%d | msg_buffer_size=%d \n",__func__, iov_cnt, total_len, sizeof(msg_informaiton), sizeof(msg_buffer));
+
+			/* print msg_info */
+vmm_printf("---- %s: msg_inf: addr=0x%016x | flags=0x%016x | len=0x%016x\n",__func__, msg_informaiton.addr, msg_informaiton.flags, msg_informaiton.len);
+			/* print msg_buffer */
+	for (i=0;i<msg_informaiton.len;i++)
+		vmm_printf("---- %s: buf[%d] = 0x%08x\n",__func__, i, msg_buffer[i]);
+
+			/* write */
+			virtio_buf_to_iovec_write(vdev, &iov[0], 1, &msg_informaiton, sizeof(msg_informaiton));
+			virtio_buf_to_iovec_write(vdev, &iov[1], 1, &msg_buffer, sizeof(msg_buffer));
+
+			virtio_queue_set_used_elem(vq, head, total_len);
+
+		}
+	}
+	vmm_printf("---- %s: end \n",__func__);
+
+}
+
+
+static int i2c_recv_msgs(struct virtio_device *dev)
+{
+	vmm_printf("---- %s: \n", __func__);
+	struct virtio_i2c_dev *vi2cdev = dev->emu_data;
+
+	u8 buf[8];
+	u16 head = 0;
+	u32 i, len, iov_cnt = 0, total_len = 0;
+	struct virtio_queue *vq = &vi2cdev->vqs[VIRTIO_I2C_IN_QUEUE];
+	struct virtio_iovec *iov = vi2cdev->in_iov;
+	struct msg_info msg_informaiton;
+	__u8 *msg_buffer;
+
+	vmm_printf("---- %s: name=%s\n", __func__,vi2cdev->name);
+	/*---------*/
+/*	if (!vq || !vq->addr || !vq->vring.avail) {
+		vmm_printf("---- %s: ERROR available !\n",__func__);
+	}
+
+	vring_avail_event(&vq->vring) = vq->last_avail_idx;
+	vmm_printf("---- %s: A=%d | B=%d \n",__func__,vring_avail_event(&vq->vring),vq->last_avail_idx);
+
+	vq->vring.avail->idx !=  vq->last_avail_idx;
+	vmm_printf("---- %s: C=%d | D=%d\n",__func__, vq->vring.avail->idx,vq->last_avail_idx);
+*/	/*---------*/
+
+	/* recept data */
+	while (virtio_queue_available(vq)) {
+		head = virtio_queue_get_iovec(vq, iov, &iov_cnt, &total_len);
+		vmm_printf("---- %s: iov_cnt=%d | total_len=%d | head=%d\n", __func__, iov_cnt, total_len,head);
+		for (i = 0; i < iov_cnt; i+=2) {
+			virtio_iovec_to_buf_read(vi2cdev->vdev, &iov[i], 1,
+				&msg_informaiton, sizeof(msg_informaiton));
+			virtio_iovec_to_buf_read(vi2cdev->vdev, &iov[i+1], 1,
+				&msg_buffer, sizeof(msg_buffer));
+		}
+		virtio_queue_set_used_elem(vq, head, total_len);
+	}
+
+	/* print msgs recv */
+	vmm_printf("---- %s: msg_inf: addr=0x%016x | flags=0x%016x | len=0x%016x\n",__func__, msg_informaiton.addr, msg_informaiton.flags, msg_informaiton.len);
+	for (i=0;i<msg_informaiton.len;i++)
+		vmm_printf("---- %s: buf[%d] = 0x%08x\n",__func__, i, msg_buffer[i]);
+
+	/* make struct msg */
+	vmm_printf("---- %s: make struct msg\n", __func__);
+	vi2cdev->msg.addr = msg_informaiton.addr;
+	vi2cdev->msg.flags = msg_informaiton.flags;
+	vi2cdev->msg.len = msg_informaiton.len;
+	for(i=0; i < msg_informaiton.len; i++)
+		vi2cdev->msg.buf[i] = msg_buffer[i];
+
+	/* send message to hardware */
+	vi2cdev->msg.addr++;
+	vmm_printf("---- %s: before guest_request\n", __func__);
+	vmm_printf("---- %s: msg_inf: addr=0x%016x | flags=0x%016x | len=0x%016x\n",__func__, vi2cdev->msg.addr, vi2cdev->msg.flags, vi2cdev->msg.len);
+	for (i=0;i<vi2cdev->msg.len;i++)
+		vmm_printf("---- %s: buf[%d] = 0x%08x\n",__func__, i, vi2cdev->msg.buf[i]);
+
+	vmm_printf("---- %s: vmm_manager_guest_request\n", __func__);
+	vmm_manager_guest_request(dev->guest, orphan_i2c_transfer, vi2cdev);
+
+	return VMM_OK;
+}
 /*************************************************/
 /********************* OPS  **********************/
 /*************************************************/
@@ -239,6 +370,8 @@ static int virtio_i2c_connect(struct virtio_device *dev,
 	vmm_printf("---- %s: name=%s\n", __func__, i2cdev->name);
 
 	dev->emu_data = i2cdev;
+
+	i2cdev->msg.buf = vmm_zalloc(sizeof(__u8)*VIRTIO_I2C_QUEUE_SIZE);
 
 	/* Get adapters */
 	i2cdev->adapter = NULL;

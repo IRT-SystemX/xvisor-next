@@ -77,7 +77,7 @@ size_t strlcpy(char *dest, const char *src, size_t n)
 		for (n--; n && ((*dest = *src) != '\0'); dest++, src++,
 			ret ++, n--);
 		/* add a trailing 0 */
-		if (n == 0) *dest = '\0';
+		*dest = '\0';
 	}
 	/* increase ret until end of src */
 	for (; *src != '\0'; src++, ret++);

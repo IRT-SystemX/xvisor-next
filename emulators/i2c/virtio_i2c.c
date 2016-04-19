@@ -77,26 +77,29 @@ static int i2cimx_attach_adapter(struct device *dev, void *dummy)
 	return VMM_OK;
 }
 
-/********************************/
+/*************************************************/
+/********************* OPS  **********************/
+/*************************************************/
+
 /* VirtIO operations */
 
 static u32 virtio_i2c_get_host_features(struct virtio_device *dev)
 {
-	vmm_printf("**** %s: \n", __func__);
+	vmm_printf("---- %s: \n", __func__);
 	return 0;
 }
 
 static void virtio_i2c_set_guest_features(struct virtio_device *dev,
 					  u32 features)
 {
-	vmm_printf("**** %s: features=%u \n", __func__,features);
+	vmm_printf("---- %s: features=%u \n", __func__,features);
 	/* No host features so, ignore it. */
 }
 
 static int virtio_i2c_init_vq(struct virtio_device *dev,
 				  u32 vq, u32 page_size, u32 align, u32 pfn)
 {
-	vmm_printf("**** %s: \n", __func__);
+	vmm_printf("---- %s: \n", __func__);
 	int rc;
 	struct virtio_i2c_dev *vi2cdev = dev->emu_data;
 
@@ -116,7 +119,7 @@ static int virtio_i2c_init_vq(struct virtio_device *dev,
 
 static int virtio_i2c_get_pfn_vq(struct virtio_device *dev, u32 vq)
 {
-	vmm_printf("**** %s: \n", __func__);
+	vmm_printf("---- %s: \n", __func__);
 	int rc;
 	struct virtio_i2c_dev *vi2cdev = dev->emu_data;
 
@@ -135,7 +138,7 @@ static int virtio_i2c_get_pfn_vq(struct virtio_device *dev, u32 vq)
 
 static int virtio_i2c_get_size_vq(struct virtio_device *dev, u32 vq)
 {
-	vmm_printf("**** %s: \n", __func__);
+	vmm_printf("---- %s: \n", __func__);
 	int rc;
 
 	switch (vq) {
@@ -153,14 +156,15 @@ static int virtio_i2c_get_size_vq(struct virtio_device *dev, u32 vq)
 
 static int virtio_i2c_set_size_vq(struct virtio_device *dev, u32 vq, int size)
 {
-	vmm_printf("**** %s: \n", __func__);
+	vmm_printf("---- %s: \n", __func__);
 	/* FIXME: dynamic */
 	return size;
 }
 
+
 static int virtio_i2c_notify_vq(struct virtio_device *dev, u32 vq)
 {
-	vmm_printf("**** %s: \n", __func__);
+	vmm_printf("---- %s: \n", __func__);
 
 	int rc = VMM_OK;
 
@@ -187,21 +191,20 @@ static int virtio_i2c_notify_vq(struct virtio_device *dev, u32 vq)
 static int virtio_i2c_read_config(struct virtio_device *dev, 
 				      u32 offset, void *dst, u32 dst_len)
 {
-	vmm_printf("**** %s: \n", __func__);
+	vmm_printf("---- %s: not implemented\n", __func__);
 	return 0;
 }
 
 static int virtio_i2c_write_config(struct virtio_device *dev,
 				       u32 offset, void *src, u32 src_len)
 {
-	vmm_printf("**** %s: \n", __func__);
+	vmm_printf("---- %s: not implemented\n", __func__);
 	return 0;
 }
 
 static int virtio_i2c_reset(struct virtio_device *dev)
 {
-	vmm_printf("**** %s: \n", __func__);
-	return 0;
+	vmm_printf("---- %s: \n", __func__);
 	int rc;
 	struct virtio_i2c_dev *vi2cdev = dev->emu_data;
 
@@ -221,7 +224,7 @@ static int virtio_i2c_reset(struct virtio_device *dev)
 static int virtio_i2c_connect(struct virtio_device *dev, 
 				  struct virtio_emulator *emu)
 {
-	vmm_printf("**** %s: \n", __func__);
+	vmm_printf("---- %s: \n", __func__);
 
 	struct virtio_i2c_dev *i2cdev;
 
@@ -233,7 +236,7 @@ static int virtio_i2c_connect(struct virtio_device *dev,
 	i2cdev->vdev = dev;
 
 	vmm_snprintf(i2cdev->name, VIRTIO_DEVICE_MAX_NAME_LEN, "%s", dev->name);
-	vmm_printf("**** %s: name=%s\n", __func__, i2cdev->name);
+	vmm_printf("---- %s: name=%s\n", __func__, i2cdev->name);
 
 	dev->emu_data = i2cdev;
 
@@ -248,7 +251,7 @@ static int virtio_i2c_connect(struct virtio_device *dev,
 
 static void virtio_i2c_disconnect(struct virtio_device *dev)
 {
-	vmm_printf("**** %s: \n", __func__);
+	vmm_printf("---- %s: \n", __func__);
 
 	struct virtio_i2c_dev *i2cdev = dev->emu_data;
 
@@ -284,13 +287,13 @@ struct virtio_emulator virtio_i2c = {
 
 static int __init virtio_i2c_init(void)
 {
-	vmm_printf("**** %s: Xvisor init i2c virtio\n", __func__);
+	vmm_printf("---- %s: Xvisor init i2c virtio\n", __func__);
 	return virtio_register_emulator(&virtio_i2c);
 }
 
 static void __exit virtio_i2c_exit(void)
 {
-	vmm_printf("**** %s: \n", __func__);
+	vmm_printf("---- %s: \n", __func__);
 	virtio_unregister_emulator(&virtio_i2c);
 }
 

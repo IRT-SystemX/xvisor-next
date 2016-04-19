@@ -46,11 +46,9 @@
 			interrupts = <41>;
 			host-interrupts = <41>;
 			memory-passthrough = <0x3>;
-			verbosity = <0x3>;
+			debug = <0xffffffff>;
 			device_type = "pt";
 			compatible = "simple";
-			//device_type = "misc";
-			//compatible = "zero";
 		};
 
 		gpu_2d {
@@ -61,11 +59,9 @@
 			interrupts = <42>;
 			host-interrupts = <42>;
 			memory-passthrough = <0x3>;
-			verbosity = <0x3>;
 			device_type = "pt";
 			compatible = "simple";
-			//device_type = "misc";
-			//compatible = "zero";
+			debug = <0xffffffff>;
 		};
 
 		gpu_vg {
@@ -76,11 +72,9 @@
 			interrupts = <43>;
 			host-interrupts = <43>;
 			memory-passthrough = <0x3>;
-			verbosity = <0x3>;
+			debug = <0xffffffff>;
 			device_type = "pt";
 			compatible = "simple";
-			//device_type = "misc";
-			//compatible = "zero";
 		};
 
 		ocram {
@@ -127,7 +121,6 @@
 			interrupts = <37 38>;
 			host-interrupts = <37 38>;
 			memory-passthrough = <0x3>;
-			verbosity = <0x3>;
 		//	device_type = "misc";
 		//	compatible = "zero";
 			device_type = "pt";
@@ -141,7 +134,6 @@
 			physical_size = <0x00400000>;
 			interrupts = <39 40>;
 			memory-passthrough = <0x3>;
-			verbosity = <0x3>;
 			host-interrupts = <39 40>;
 			device_type = "pt";
 			compatible = "simple";
@@ -156,10 +148,8 @@
 			physical_size = <0x4000>;
 			device_type = "misc";
 			compatible = "zero";
-                        verbosity = <0x3>; /* 0b11 = WRITE|READ */
 		//	device_type = "pt";
 		//	memory-passthrough = <0x3>;
-		//	verbosity = <0x0>;
 		//	compatible = "simple";
 		//	host-interrupts = <32>;
 		//	interrupts = <32>;
@@ -323,7 +313,6 @@
 			physical_size = <0x4000>;
 			device_type = "misc";
 			compatible = "zero";
-                        verbosity = <0x3>;
                 };
 
                 usdhc3 {
@@ -361,7 +350,6 @@
 			interrupts = <35 44>;
 			host-interrupts = <35 44>;
 			memory-passthrough = <0x3>;
-			verbosity = <0x0>;
 			device_type = "misc";
 			compatible = "zero";
 	//		device_type = "pt";
@@ -415,7 +403,7 @@
 			address_type = "memory";
 			device_type = "virtio";
 			compatible = "virtio,mmio";
-			virtio_type = <2>;
+			virtio_type = <2>; /* virtio_blk */
 			guest_physical_addr = <0x00118000>; /* In a "reserved" region */
 			physical_size = <0x1000>;
 			blkdev = "mmc0p1"; // XXX: this is just the second partition on the sd card
@@ -448,17 +436,6 @@
 			device_type = "misc";
 			compatible = "zero";
 		};
-
-//		virtio-con0 {
-//			manifest_type = "virtual";
-//			address_type = "memory";
-//			device_type = "virtio";
-//			compatible = "virtio,mmio";
-//			virtio_type = <3>;
-//			guest_physical_addr = <0x0220d000>;
-//			physical_size = <0x1000>;
-//			interrupts = <145>;
-//		};
 
 		nor_flash0 {
 			manifest_type = "real";
@@ -517,7 +494,7 @@
 			host-interrupts = <121>;
 			device_type = "pt";
 			compatible = "imx6q-gpc";
-			debug = <0xffffffff>;
+			//debug = <0xffffffff>;
 			/* CNTR Mask:
 			 *  - GPCIRQM
 			 *  - DVFS0CR

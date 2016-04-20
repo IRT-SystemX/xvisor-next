@@ -84,6 +84,20 @@
 			compatible = "virtio,mmio";
 			reg = <0x00129000 0x1000>;
 			interrupts = <145>;
+
+			codec: sgtl5000@0a {
+				compatible = "fsl,sgtl5000";
+				reg = <0x0a>;
+				clocks = <&clks 201>;
+				VDDA-supply = <&reg_2p5v>;
+				VDDIO-supply = <&reg_3p3v>;
+			};
+			isl1208@6f {
+				compatible = "isl,isl1208";
+				reg = <0x6f>;
+				//interrupt-parent = <&gpio6>;
+				//interrupts = <7 IRQ_TYPE_EDGE_FALLING>;
+			};
 		};
 	};
 

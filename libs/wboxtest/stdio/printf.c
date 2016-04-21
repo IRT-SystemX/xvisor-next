@@ -45,6 +45,13 @@ static int wb_printf_run(struct wboxtest *test, struct vmm_chardev *cdev)
         const virtual_size_t size = 42;
         const s64 var = 777;
         const u64 feeddeadbabe = 0xfeeddeadbabeLL;
+	bool colors;
+
+#ifdef CONFIG_LOG_ANSI_COLORS
+	colors = TRUE;
+#else
+	colors = FALSE;
+#endif
 
 #define _TEST(expect_, fmt_, ...) \
         do { \
@@ -85,6 +92,21 @@ static int wb_printf_run(struct wboxtest *test, struct vmm_chardev *cdev)
 
         /*===================================================================*/
 #undef _TEST
+
+	/*
+	 * Demonstrate the color capabilities
+	 */
+	vmm_printf("\nTrying out vmm_lprintf(): log level is %ld, colors are %s.\n",
+		   vmm_stdio_loglevel(), colors ? "enabled" : "disabled");
+	vmm_linfo("This is an information message\n");
+	vmm_lnotice("This is a notice message\n");
+	vmm_lwarning("This is a warning message\n");
+	vmm_lerror("This is an error message\n");
+	vmm_lcritical("This is a critical message\n");
+	vmm_lalert("This is an alert message\n");
+	vmm_lemergency("This is an emergency message\n");
+	vmm_printf("\n");
+
         return rc;
 }
 

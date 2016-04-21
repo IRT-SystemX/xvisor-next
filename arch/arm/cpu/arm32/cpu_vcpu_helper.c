@@ -411,6 +411,16 @@ void cpu_vcpu_reg_write(struct vmm_vcpu *vcpu,
 		}
 		break;
 	case 13:
+		/* Strict AAPCS */
+		if (unlikely(reg_val % 8 != 0)) {
+			/*
+			 * FIXME
+			 * Stack pointer will be set to a non 64-bits aligned
+			 * value. When starting Linux userland, a stack is
+			 * mis-aligned. What should we do then? Do we care?
+			 * FIXME
+			 */
+		}
 		regs->sp = reg_val;
 		switch (curmode) {
 		case CPSR_MODE_USER:
@@ -776,13 +786,28 @@ int arch_vcpu_init(struct vmm_vcpu *vcpu)
 	int rc;
 	u32 ite, cpuid;
 	const char *attr;
+	u32 sp_excp;
 
 	/* Initialize User Mode Registers */
 	/* For both Orphan & Normal VCPUs */
 
 	memset(arm_regs(vcpu), 0, sizeof(arch_regs_t));
 	arm_regs(vcpu)->pc = vcpu->start_pc;
-	arm_regs(vcpu)->sp_excp = vcpu->stack_va + vcpu->stack_sz - 4;
+	sp_excp = vcpu->stack_va + vcpu->stack_sz - 4;
+
+	/*
+	 * Stacks must be 64-bits aligned to respect AAPCS:
+	 * Procedure Call Standard for the ARM Architecture.
+	 * To do so, AAPCS advises that all SP must be set to
+	 * a value which is 0 modulo 8.
+	 * The compiler takes care of the frame size.
+	 *
+	 * This is terribly important because it messes runtime
+	 * with values greater than 32 bits (e.g. 64-bits integers).
+	 */
+	sp_excp = (sp_excp + 0x7) & ~0x7;
+
+	arm_regs(vcpu)->sp_excp = sp_excp;
 	if (vcpu->is_normal) {
 		arm_regs(vcpu)->cpsr  = CPSR_ZERO_MASK;
 		arm_regs(vcpu)->cpsr |= CPSR_ASYNC_ABORT_DISABLED;

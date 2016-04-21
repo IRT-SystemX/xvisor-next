@@ -215,6 +215,15 @@ _start_mmu_init:
 	sub	sp, sp, r6
 	add	sp, sp, r4
 
+	/*
+	 * Unsure that the stack pointer is 64-bits aligned
+	 * to respect the AAPCS. Non 64-bits aligned values
+	 * will led to broken runtime when dealing with 64-bits
+	 * (or greater) values
+	 */
+	add	sp, sp, #7
+	bic	sp, sp, #7
+
 	mov	r0, r4
 	mov	r1, r5
 	mov	r2, r6
@@ -549,6 +558,11 @@ _reset:
 	mul	r9, r9, r10
 	sub	sp, sp, r9
 #endif
+
+	/* AAPCS: unsure strict 64-bits alignment */
+	add	sp, #7
+	bic	sp, #7
+
 	/* Set to Supervisor Mode */
 	CMODE	r8, CPSR_MODE_SUPERVISOR
 	/* Call CPU init function */

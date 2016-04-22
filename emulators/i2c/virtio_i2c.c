@@ -56,6 +56,21 @@ struct msg_info
 /********************* FONC **********************/
 /*************************************************/
 
+static void print_msgs(const char * func, struct i2c_msg *msgs, int num)
+{
+	int i;
+
+	for (i=0; i<num; i++)
+	{
+		vmm_printf("---- %s: msgs: addr=0x%016x | flags=0x%016x | len=0x%016x\n",
+				func, msgs->addr, msgs->flags, msgs->len);
+		for (i=0;i<msgs->len;i++)
+			vmm_printf("---- %s: msgs->buf[%d] = 0x%08x\n",
+				func, i, msgs->buf[i]);
+	}
+}
+
+
 static int i2cimx_attach_adapter(struct device *dev, void *dummy)
 {
 	struct i2c_adapter *adap;
@@ -118,14 +133,12 @@ static void orphan_i2c_transfer(struct vmm_guest * guest, void *param){
 		vmm_printf("---- %s: virtio_queue_available OK\n",__func__);
 		head = virtio_queue_get_iovec(vq, iov, &iov_cnt, &total_len);
 		if (iov_cnt) {
-			/* print info size */
-			vmm_printf("---- %s: write: iov_cnt=%d | total_len=%d | msg_informaiton_size=%d | msg_buffer_size=%d \n",__func__, iov_cnt, total_len, sizeof(msg_informaiton), sizeof(msg_buffer));
+			/* print msgs recv */
+			print_msgs(__func__, &vi2cdev->msg, 1);
 
-			/* print msg_info */
-vmm_printf("---- %s: msg_inf: addr=0x%016x | flags=0x%016x | len=0x%016x\n",__func__, msg_informaiton.addr, msg_informaiton.flags, msg_informaiton.len);
-			/* print msg_buffer */
-	for (i=0;i<msg_informaiton.len;i++)
-		vmm_printf("---- %s: buf[%d] = 0x%08x\n",__func__, i, msg_buffer[i]);
+			/* print msgs recv */
+			print_msgs(__func__, &vi2cdev->msg, 1);
+
 
 			/* write */
 			virtio_buf_to_iovec_write(vdev, &iov[0], 1, &msg_informaiton, sizeof(msg_informaiton));
@@ -183,10 +196,6 @@ static int i2c_recv_msgs(struct virtio_device *dev)
 		virtio_queue_set_used_elem(vq, head, total_len);
 	}
 
-	/* print msgs recv */
-	vmm_printf("---- %s: msg_inf: addr=0x%016x | flags=0x%016x | len=0x%016x\n",__func__, msg_informaiton.addr, msg_informaiton.flags, msg_informaiton.len);
-	for (i=0;i<msg_informaiton.len;i++)
-		vmm_printf("---- %s: buf[%d] = 0x%08x\n",__func__, i, msg_buffer[i]);
 
 	/* make struct msg */
 	vmm_printf("---- %s: make struct msg\n", __func__);
@@ -196,12 +205,6 @@ static int i2c_recv_msgs(struct virtio_device *dev)
 	for(i=0; i < msg_informaiton.len; i++)
 		vi2cdev->msg.buf[i] = msg_buffer[i];
 
-	/* send message to hardware */
-	vi2cdev->msg.addr++;
-	vmm_printf("---- %s: before guest_request\n", __func__);
-	vmm_printf("---- %s: msg_inf: addr=0x%016x | flags=0x%016x | len=0x%016x\n",__func__, vi2cdev->msg.addr, vi2cdev->msg.flags, vi2cdev->msg.len);
-	for (i=0;i<vi2cdev->msg.len;i++)
-		vmm_printf("---- %s: buf[%d] = 0x%08x\n",__func__, i, vi2cdev->msg.buf[i]);
 
 	vmm_printf("---- %s: vmm_manager_guest_request\n", __func__);
 	vmm_manager_guest_request(dev->guest, orphan_i2c_transfer, vi2cdev);

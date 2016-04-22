@@ -25,38 +25,28 @@
 #define dev_dbg(...)
 #endif
 
-#define dev_info(dev, args...)		do { \
-					vmm_linfo("%s: ", (dev)->name); \
-					vmm_linfo(args); \
+#define dev_info(dev, fmt, ...)		do { \
+					vmm_linfo("%s: " fmt, (dev)->name, ## __VA_ARGS__); \
 					} while (0)
 
-#define dev_warn(dev, args...)		do { \
-					vmm_lwarning("WARNING: %s: ", \
-						     (dev)->name);    \
-					vmm_lwarning(args);	      \
+#define dev_warn(dev, fmt, ...)		do { \
+					vmm_lwarning("%s: " fmt, (dev)->name, ## __VA_ARGS__); \
 					} while (0)
 
-#define dev_err(dev, args...)		do { \
-					vmm_lerror("ERROR: %s: ", \
-						   (dev)->name);  \
-					vmm_lerror(args); \
+#define dev_err(dev, fmt, ...)		do { \
+					vmm_lerror("%s: " fmt, (dev)->name, ## __VA_ARGS__); \
 					} while (0)
 
-#define dev_crit(dev, args...)		do { \
-					vmm_lcritical("CRITCAL: %s: ", \
-						      (dev)->name);    \
-					vmm_lcritical(args); \
+#define dev_crit(dev, fmt, ...)		do { \
+					vmm_lcritical("%s: " fmt, (dev)->name, ## __VA_ARGS__); \
 					} while (0)
 
-#define dev_notice(dev, args...)	do { \
-					vmm_lnotice("NOTICE: %s: ", \
-						    (dev)->name);   \
-					vmm_lnotice(args); \
+#define dev_notice(dev, fmt, ...)	do { \
+					vmm_lnotice("%s: " fmt, (dev)->name, ## __VA_ARGS__); \
 					} while (0)
 
-#define dev_printk(level, dev, args...)	do { \
-					vmm_printf("%s: ", (dev)->name); \
-					vmm_printf(args); \
+#define dev_printk(level, fmt, ...)	do { \
+					vmm_lnotice(level, "%s: " fmt, (dev)->name, ## __VA_ARGS__); \
 					} while (0)
 
 #define printk_ratelimit()			0

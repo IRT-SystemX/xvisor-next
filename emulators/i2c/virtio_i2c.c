@@ -22,20 +22,16 @@
 #define MODULE_INIT			virtio_i2c_init
 #define MODULE_EXIT			virtio_i2c_exit
 
-#define VIRTIO_I2C_IN_QUEUE		0
-#define VIRTIO_I2C_OUT_QUEUE		1
+#define VIRTIO_I2C_QUEUE	0
 #define VIRTIO_I2C_QUEUE_SIZE	128
-#define VIRTIO_I2C_NUM_QUEUES	2
+#define VIRTIO_I2C_NUM_QUEUES	1
 
 /********************************/
 struct virtio_i2c_dev {
 	struct virtio_device *vdev;
 
 	struct virtio_queue vqs[VIRTIO_I2C_NUM_QUEUES];
-	struct virtio_iovec in_iov[VIRTIO_I2C_QUEUE_SIZE];
-//	struct virtio_iovec out_iov[VIRTIO_I2C_QUEUE_SIZE];
-//	struct virtio_iovec tx_iov[VIRTIO_CONSOLE_QUEUE_SIZE];
-//	struct virtio_i2c_config config;
+	struct virtio_iovec iov[VIRTIO_I2C_QUEUE_SIZE];
 //	u32 features;
 
 	char name[VIRTIO_DEVICE_MAX_NAME_LEN];
@@ -91,8 +87,8 @@ static void orphan_i2c_transfer(struct vmm_guest * guest, void *param){
         struct virtio_i2c_dev *vi2cdev = param;
 	u16 head = 0;
 	u32 i = 0, iov_cnt = 0, total_len = 0;
-	struct virtio_queue *vq = &vi2cdev->vqs[VIRTIO_I2C_OUT_QUEUE];
 	struct virtio_iovec *iov = vi2cdev->in_iov;
+	struct virtio_queue *vq = &vi2cdev->vqs[VIRTIO_I2C_QUEUE];
 	struct virtio_device *vdev = vi2cdev->vdev;
 	struct msg_info msg_informaiton;
 	__u8 *msg_buffer;
@@ -139,7 +135,7 @@ vmm_printf("---- %s: msg_inf: addr=0x%016x | flags=0x%016x | len=0x%016x\n",__fu
 
 			vmm_printf("---- %s: signal \n",__func__);
 			if (virtio_queue_should_signal(vq)) {
-				vdev->tra->notify(vdev, VIRTIO_I2C_OUT_QUEUE);
+				vdev->tra->notify(vdev, VIRTIO_I2C_QUEUE);
 			}
 		}
 	}
@@ -153,10 +149,10 @@ static int i2c_recv_msgs(struct virtio_device *dev)
 	vmm_printf("---- %s: \n", __func__);
 	struct virtio_i2c_dev *vi2cdev = dev->emu_data;
 
+	struct virtio_queue *vq = &vi2cdev->vqs[VIRTIO_I2C_QUEUE];
 	u8 buf[8];
 	u16 head = 0;
 	u32 i, len, iov_cnt = 0, total_len = 0;
-	struct virtio_queue *vq = &vi2cdev->vqs[VIRTIO_I2C_IN_QUEUE];
 	struct virtio_iovec *iov = vi2cdev->in_iov;
 	struct msg_info msg_informaiton;
 	__u8 *msg_buffer;
@@ -239,8 +235,7 @@ static int virtio_i2c_init_vq(struct virtio_device *dev,
 	struct virtio_i2c_dev *vi2cdev = dev->emu_data;
 
 	switch (vq) {
-	case VIRTIO_I2C_IN_QUEUE:
-	case VIRTIO_I2C_OUT_QUEUE:
+	case VIRTIO_I2C_QUEUE:
 		rc = virtio_queue_setup(&vi2cdev->vqs[vq], dev->guest,
 			pfn, page_size, VIRTIO_I2C_QUEUE_SIZE, align);
 		break;
@@ -259,8 +254,7 @@ static int virtio_i2c_get_pfn_vq(struct virtio_device *dev, u32 vq)
 	struct virtio_i2c_dev *vi2cdev = dev->emu_data;
 
 	switch (vq) {
-	case VIRTIO_I2C_IN_QUEUE:
-	case VIRTIO_I2C_OUT_QUEUE:
+	case VIRTIO_I2C_QUEUE:
 		rc = virtio_queue_guest_pfn(&vi2cdev->vqs[vq]);
 		break;
 	default:
@@ -277,8 +271,7 @@ static int virtio_i2c_get_size_vq(struct virtio_device *dev, u32 vq)
 	int rc;
 
 	switch (vq) {
-	case VIRTIO_I2C_IN_QUEUE:
-	case VIRTIO_I2C_OUT_QUEUE:
+	case VIRTIO_I2C_QUEUE:
 		rc = VIRTIO_I2C_QUEUE_SIZE;
 		break;
 	default:
@@ -304,12 +297,9 @@ static int virtio_i2c_notify_vq(struct virtio_device *dev, u32 vq)
 	int rc = VMM_OK;
 
 	switch (vq) {
-	case VIRTIO_I2C_IN_QUEUE:
-		vmm_printf("---- %s: VIRTIO_I2C_IN_QUEUE: vq=%u\n", __func__,vq);
+	case VIRTIO_I2C_QUEUE:
+		vmm_printf("---- %s: VIRTIO_I2C_QUEUE: vq=%u\n", __func__,vq);
 		rc = i2c_recv_msgs(dev);
-		break;
-	case VIRTIO_I2C_OUT_QUEUE:
-		vmm_printf("---- %s: VIRTIO_I2C_OUT_QUEUE: vq=%u\n", __func__,vq);
 		break;
 	default:
 		vmm_printf("---- %s: default: vq=%u\n", __func__,vq);
@@ -343,12 +333,7 @@ static int virtio_i2c_reset(struct virtio_device *dev)
 	int rc;
 	struct virtio_i2c_dev *vi2cdev = dev->emu_data;
 
-	rc = virtio_queue_cleanup(&vi2cdev->vqs[VIRTIO_I2C_IN_QUEUE]);
-	if (rc) {
-		return rc;
-	}
-
-	rc = virtio_queue_cleanup(&vi2cdev->vqs[VIRTIO_I2C_OUT_QUEUE]);
+	rc = virtio_queue_cleanup(&vi2cdev->vqs[VIRTIO_I2C_QUEUE]);
 	if (rc) {
 		return rc;
 	}

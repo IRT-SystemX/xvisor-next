@@ -371,8 +371,7 @@ int sdhci_send_command(struct mmc_host *mmc,
 
 	sdhci_writew(host, SDHCI_MAKE_CMD(cmd->cmdidx, flags), SDHCI_COMMAND);
 	if (host->sdhci_caps & SDHCI_CAN_DO_SDMA) {
-		/* Wait max 12 ms */
-		timeout = 12000000;
+		timeout = 1000000000LL; /* Timeout 1s */
 		ret = vmm_completion_wait_timeout(&host->wait_command, &timeout);
 		if (VMM_ETIMEDOUT == ret) {
 			if (host->quirks & SDHCI_QUIRK_BROKEN_R1B) {

@@ -450,8 +450,8 @@ int ext4fs_control_init(struct ext4fs_control *ctrl,
 	}
 
 	/* Directory indexing not supported */
-	if (__le32(ctrl->sblock.feature_compatibility) & 
-					EXT2_FEAT_COMPAT_DIR_INDEX) {
+	if (!(__le32(ctrl->sblock.feature_compatibility) &
+					EXT2_FEAT_COMPAT_DIR_INDEX)) {
 		rc = VMM_ENOSYS;
 		goto fail;
 	}

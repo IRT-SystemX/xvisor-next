@@ -69,13 +69,13 @@
 #endif /* CONFIG_LOG_ANSI_COLORS */
 
 /* Strings used when prefixing a log level */
-#define VMM_LOG_INFO		VMM_LOG_COLOR_CYAN "INFO"
-#define VMM_LOG_NOTICE		VMM_LOG_COLOR_GREEN "NOTE"
-#define VMM_LOG_WARNING		VMM_LOG_COLOR_YELLOW "WARN"
-#define VMM_LOG_ERROR		VMM_LOG_COLOR_ORANGE "ERR"
-#define VMM_LOG_CRITICAL	VMM_LOG_COLOR_RED "CRIT"
-#define VMM_LOG_ALERT		VMM_LOG_COLOR_LIGHTRED "ALERT"
-#define VMM_LOG_EMERGENCY	VMM_LOG_COLOR_REVERSE VMM_LOG_COLOR_LIGHTRED "FATAL"
+#define VMM_LOG_INFO		VMM_LOG_COLOR_CYAN     VMM_LOG_COLOR_REVERSE " INFO "
+#define VMM_LOG_NOTICE		VMM_LOG_COLOR_GREEN    VMM_LOG_COLOR_REVERSE " NOTE "
+#define VMM_LOG_WARNING		VMM_LOG_COLOR_YELLOW   VMM_LOG_COLOR_REVERSE " WARNING "
+#define VMM_LOG_ERROR		VMM_LOG_COLOR_ORANGE   VMM_LOG_COLOR_REVERSE " ERROR "
+#define VMM_LOG_CRITICAL	VMM_LOG_COLOR_RED      VMM_LOG_COLOR_REVERSE " CRITICAL "
+#define VMM_LOG_ALERT		VMM_LOG_COLOR_LIGHTRED VMM_LOG_COLOR_REVERSE " ALERT "
+#define VMM_LOG_EMERGENCY	VMM_LOG_COLOR_LIGHTRED VMM_LOG_COLOR_REVERSE " !!! FATAL !!! "
 
 static char const* const _log_prefixes[] = {
 	[VMM_LOGLEVEL_EMERGENCY] = VMM_LOG_EMERGENCY,
@@ -493,7 +493,7 @@ int vmm_lvprintf(enum vmm_print_level level, const char *format,  va_list args)
 	struct vmm_chardev *const cdev = stdio_ctrl.dev;
 
 	if (vmm_stdio_loglevel() >= level) {
-		retval = vmm_cprintf(cdev, "%s%s: ",
+		retval = vmm_cprintf(cdev, "%s%s ",
 				     _log_prefixes[level], VMM_LOG_COLOR_RESET);
 		retval += vmm_cvprintf(cdev, format, args);
 	}

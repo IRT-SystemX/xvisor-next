@@ -16,10 +16,9 @@
 #define no_printk(args...)
 
 #if defined(DEV_DEBUG)
-#define dev_dbg(dev, args...)						\
+#define dev_dbg(dev, fmt, ...)						\
 	do {								\
-		vmm_lnotice("%s: ", (dev)->name);			\
-		vmm_lnotice(args);					\
+		vmm_lnotice("%s: " fmt, (dev)->name, ## __VA_ARGS__);	\
 	} while (0)
 #else
 #define dev_dbg(...)

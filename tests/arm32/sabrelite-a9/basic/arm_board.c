@@ -64,17 +64,19 @@ u32 arm_board_linux_machine_type(void)
 void arm_board_linux_default_cmdline(char *cmdline, u32 cmdline_sz)
 {
 	arm_strcpy(cmdline,
-		   "root=/dev/ram rw earlyprintk "
+		   "root=/dev/vda2 rw earlyprintk "
 		   "enable_wait_mode=off "
-		   "video=mxcfb0:dev=ldb,LDB-XGA,if=RGB666 "
-		   "video=mxcfb1:off "
-		   "video=mxcfb2:off "
-		   "video=mxcfb3:off "
+		   //"video=mxcfb0:dev=ldb,LDB-XGA,if=RGB666 "
+		   //"video=mxcfb1:off "
+		   //"video=mxcfb2:off "
+		   //"video=mxcfb3:off "
+		   "drm_debug=0xffffffff "
 		   "fbmem=10M "
 		   "console=ttymxc1,115200 "
 		   "vmalloc=400M "
-		   "consoleblank=0 "
-		   "mxc_hdmi.only_cea=1");
+	//	   "consoleblank=0 "
+	//	   "mxc_hdmi.only_cea=1"
+		   );
 }
 
 u32 arm_board_flash_addr(void)

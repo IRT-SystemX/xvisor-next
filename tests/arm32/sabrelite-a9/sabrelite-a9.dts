@@ -44,7 +44,7 @@
 			guest_physical_addr = <0x00130000>;
 			physical_size = <0x00004000>;
 			interrupts = <41>;
-			host-interrupts = <41>;
+			host-interrupts = <9>;
 			memory-passthrough = <0x3>;
 			debug = <0xffffffff>;
 			device_type = "pt";
@@ -57,7 +57,7 @@
 			guest_physical_addr = <0x00134000>;
 			physical_size = <0x00004000>;
 			interrupts = <42>;
-			host-interrupts = <42>;
+			host-interrupts = <10>;
 			memory-passthrough = <0x3>;
 			device_type = "pt";
 			compatible = "simple";
@@ -70,9 +70,9 @@
 			guest_physical_addr = <0x02204000>;
 			physical_size = <0x00004000>;
 			interrupts = <43>;
-			host-interrupts = <43>;
+			host-interrupts = <11>;
 			memory-passthrough = <0x3>;
-			debug = <0xffffffff>;
+			//debug = <0xffffffff>;
 			device_type = "pt";
 			compatible = "simple";
 		};
@@ -117,37 +117,105 @@
 			manifest_type = "virtual";
 			address_type = "memory";
 			guest_physical_addr = <0x02400000>;
-			physical_size = <0x00400000>;
+			physical_size = <0x400000>;
 			interrupts = <37 38>;
-			host-interrupts = <37 38>;
+			host-interrupts = <5 6>;
 			memory-passthrough = <0x3>;
-		//	device_type = "misc";
-		//	compatible = "zero";
 			device_type = "pt";
 			compatible = "simple";
+			debug = <0xffff>;
 		};
 
 		ipu2 {
 			manifest_type = "virtual";
 			address_type = "memory";
-			guest_physical_addr = <0x02A00000>;
-			physical_size = <0x00400000>;
+			guest_physical_addr = <0x02800000>;
+			physical_size = <0x400000>;
 			interrupts = <39 40>;
 			memory-passthrough = <0x3>;
-			host-interrupts = <39 40>;
+			host-interrupts = <7 8>;
 			device_type = "pt";
 			compatible = "simple";
-			//device_type = "misc";
-			//compatible = "zero";
+			debug = <0xffff>;
 		};
 
-		iomux {
+		iomuxc {
 			manifest_type = "virtual";
 			address_type = "memory";
 			guest_physical_addr = <0x020e0000>;
 			physical_size = <0x4000>;
-			device_type = "misc";
-			compatible = "zero";
+			device_type = "pt";
+			compatible = "simple";
+			memory-passthrough = <0x3>;
+			//device_type = "misc";
+			//compatible = "fsl,imx6q-iomuxc";
+			debug = <0xffff>;
+			whitelist = <
+				0x004 0x00021000
+				0x008 0xffffffff /* LDB */
+				0x00C 0x600007ff
+				0x010 0x000000ff
+				0x018 0xffffffff
+				0x01C 0xffffffff
+
+				0x15C 0x00000017
+				0x160 0x00000017
+				0x164 0x00000017
+				0x168 0x00000017
+				0x170 0x00000017
+				0x174 0x00000017
+				0x178 0x00000017
+				0x17C 0x00000017
+				0x180 0x00000017
+				0x184 0x00000017
+				0x188 0x00000017
+				0x18C 0x00000017
+				0x190 0x00000017
+				0x194 0x00000017
+				0x198 0x00000017
+				0x19C 0x00000017
+				0x1A0 0x00000017
+				0x1A4 0x00000017
+				0x1A8 0x00000017
+				0x1AC 0x00000017
+				0x1B0 0x00000017
+				0x1B4 0x00000017
+				0x1B8 0x00000017
+				0x1BC 0x00000017
+				0x1C0 0x00000017
+				0x1C4 0x00000017
+				0x1C8 0x00000017
+				0x1CC 0x00000017
+
+				0x470 0xffffffff
+				0x474 0xffffffff
+				0x478 0xffffffff
+				0x47C 0xffffffff
+				0x484 0xffffffff
+				0x488 0xffffffff
+				0x48C 0xffffffff
+				0x490 0xffffffff
+				0x494 0xffffffff
+				0x498 0xffffffff
+				0x49C 0xffffffff
+				0x4A0 0xffffffff
+				0x4A4 0xffffffff
+				0x4A8 0xffffffff
+				0x4AC 0xffffffff
+				0x4B0 0xffffffff
+				0x4B4 0xffffffff
+				0x4B8 0xffffffff
+				0x4BC 0xffffffff
+				0x4C0 0xffffffff
+				0x4C4 0xffffffff
+				0x4C8 0xffffffff
+				0x4CC 0xffffffff
+				0x4D0 0xffffffff
+				0x4D4 0xffffffff
+				0x4D8 0xffffffff
+				0x4DC 0xffffffff
+				0x4E0 0xffffffff
+			>;
 		//	device_type = "pt";
 		//	memory-passthrough = <0x3>;
 		//	compatible = "simple";
@@ -162,6 +230,7 @@
 			physical_size = <0x2000>;
 			device_type = "misc";
 			compatible = "fsl,imx6q-dma-apbh";
+			debug = <0xffff>;
 		};
 
 		priv0 {
@@ -276,6 +345,16 @@
 			interrupts = <59>;
 		};
 
+		vdoa {
+			manifest_type = "virtual";
+			address_type = "memory";
+			guest_physical_addr = <0x021e4000>;
+			physical_size = <0x4000>;
+			device_type = "misc";
+			compatible = "zero";
+			debug = <0xffff>;
+		};
+
 		spba {
 			manifest_type = "virtual";
 			address_type = "memory";
@@ -290,9 +369,6 @@
 			address_type = "memory";
 			guest_physical_addr = <0x020ec000>;
 			physical_size = <0x4000>;
-			memory-passthrough = <0x3>;
-			interrupts = <34>;
-			host-interrupts = <34>;
 			device_type = "misc";
 			compatible = "zero";
                 };
@@ -348,55 +424,14 @@
 			guest_physical_addr = <0x02040000>;
 			physical_size = <0x0003c000>;
 			interrupts = <35 44>;
-			host-interrupts = <35 44>;
+			host-interrupts = <3 12>;
 			memory-passthrough = <0x3>;
 			device_type = "misc";
 			compatible = "zero";
+			debug = <0xffff>;
 	//		device_type = "pt";
 	//		compatible = "simple";
 		};
-
-		/* /\* Emulate EPIT with a SP804 for now*\/ */
-		/* timer0_1_legacy { */
-		/* 	manifest_type = "virtual"; */
-		/* 	address_type = "memory"; */
-		/* 	guest_physical_addr = <0x020D0000>; */
-		/* 	physical_size = <0x1000>; */
-		/* 	device_type = "timer"; */
-		/* 	compatible = "primecell,sp804"; */
-		/* 	interrupts = <34>; */
-		/* }; */
-
-		/* epit1 { */
-		/* 	manifest_type = "virtual"; */
-		/* 	address_type = "memory"; */
-		/* 	guest_physical_addr = <0x020d0000>; */
-		/* 	physical_size = <0x1000>; */
-		/* 	device_type = "misc"; */
-		/* 	compatible = "zero"; */
-		/* }; */
-
-		/* timer2_3_legacy { */
-		/* 	manifest_type = "virtual"; */
-		/* 	address_type = "memory"; */
-		/* 	guest_physical_addr = <0x10012000>; */
-		/* 	physical_size = <0x1000>; */
-		/* 	device_type = "timer"; */
-		/* 	compatible = "primecell,sp804"; */
-		/* 	interrupts = <35>; */
-		/* }; */
-
-//		NET0: virtio-net0 {
-//			manifest_type = "virtual";
-//			address_type = "memory";
-//			device_type = "virtio";
-//			compatible = "virtio,mmio";
-//			virtio_type = <1>;
-//			guest_physical_addr = <0x0220c000>;
-//			physical_size = <0x1000>;
-//			switch = ""; /* Override this before guest creation */
-//			interrupts = <42>;
-//		};
 
 		DISK0: virtio-blk0 {
 			manifest_type = "virtual";
@@ -406,7 +441,7 @@
 			virtio_type = <2>; /* virtio_blk */
 			guest_physical_addr = <0x00118000>; /* In a "reserved" region */
 			physical_size = <0x1000>;
-			blkdev = "mmc0p1"; // XXX: this is just the second partition on the sd card
+			blkdev = "mmc0"; // XXX: this is just the second partition on the sd card
 			interrupts = <144>;
 		};
 
@@ -465,6 +500,20 @@
 			physical_size = <0x4000>;
 			device_type = "misc";
 			compatible = "fsl,imx6q-ccm";
+		//	debug = <0xffff>;
+			whitelist = <
+				0x02C 0x00007e00
+				0x034 0x0003ffff
+				0x038 0x0003ffff
+				0x074 0x0000ffff
+				0x060 0x01ff017f
+				0x06C 0x0f000000
+				0x080 0x0000c000
+				0x020 0x0c000000
+				0x018 0xff83c333
+				0x03C 0x0007fe00
+				0x088 0x00000c00
+			>;
 		};
 
 		anatop {

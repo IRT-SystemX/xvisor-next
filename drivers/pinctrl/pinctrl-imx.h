@@ -62,6 +62,17 @@ struct imx_pmx_func {
 };
 
 /**
+ * @dev: a pointer back to containing device
+ * @base: the offset to the controller in virtual memory
+ */
+struct imx_pinctrl {
+	struct device *dev;
+	struct pinctrl_dev *pctl;
+	void __iomem *base;
+	const struct imx_pinctrl_soc_info *info;
+};
+
+/**
  * struct imx_pin_reg - describe a pin reg map
  * @mux_reg: mux register offset
  * @conf_reg: config register offset

@@ -23,7 +23,7 @@
 	chosen {
 		console = &SERIAL2;
 		bootcmd =
-			"backlight brightness backlight_lvds 6",
+			"backlight brightness backlight_lvds 7",
 			"fb logo fb0",
 
 			/* Mount SD device */

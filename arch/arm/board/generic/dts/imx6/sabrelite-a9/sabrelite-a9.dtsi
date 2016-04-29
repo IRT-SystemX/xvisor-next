@@ -112,6 +112,22 @@
 	};
 };
 
+//&gpu {
+//	status = "okay";
+//};
+
+//&reg_pu {
+//	status = "okay";
+//};
+
+&ipu1 {
+	status = "okay";
+};
+
+&ipu2 {
+	status = "okay";
+};
+
 &fec {
 	status = "okay";
 	pinctrl-names = "default";

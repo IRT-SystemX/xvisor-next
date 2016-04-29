@@ -158,34 +158,34 @@
 				0x018 0xffffffff
 				0x01C 0xffffffff
 
-				0x15C 0x00000017
-				0x160 0x00000017
-				0x164 0x00000017
-				0x168 0x00000017
-				0x170 0x00000017
-				0x174 0x00000017
-				0x178 0x00000017
-				0x17C 0x00000017
-				0x180 0x00000017
-				0x184 0x00000017
-				0x188 0x00000017
-				0x18C 0x00000017
-				0x190 0x00000017
-				0x194 0x00000017
-				0x198 0x00000017
-				0x19C 0x00000017
-				0x1A0 0x00000017
-				0x1A4 0x00000017
-				0x1A8 0x00000017
-				0x1AC 0x00000017
-				0x1B0 0x00000017
-				0x1B4 0x00000017
-				0x1B8 0x00000017
-				0x1BC 0x00000017
-				0x1C0 0x00000017
-				0x1C4 0x00000017
-				0x1C8 0x00000017
-				0x1CC 0x00000017
+				0x15C 0xffffffff
+				0x160 0xffffffff
+				0x164 0xffffffff
+				0x168 0xffffffff
+				0x170 0xffffffff
+				0x174 0xffffffff
+				0x178 0xffffffff
+				0x17C 0xffffffff
+				0x180 0xffffffff
+				0x184 0xffffffff
+				0x188 0xffffffff
+				0x18C 0xffffffff
+				0x190 0xffffffff
+				0x194 0xffffffff
+				0x198 0xffffffff
+				0x19C 0xffffffff
+				0x1A0 0xffffffff
+				0x1A4 0xffffffff
+				0x1A8 0xffffffff
+				0x1AC 0xffffffff
+				0x1B0 0xffffffff
+				0x1B4 0xffffffff
+				0x1B8 0xffffffff
+				0x1BC 0xffffffff
+				0x1C0 0xffffffff
+				0x1C4 0xffffffff
+				0x1C8 0xffffffff
+				0x1CC 0xffffffff
 
 				0x470 0xffffffff
 				0x474 0xffffffff
@@ -223,15 +223,15 @@
 		//	interrupts = <32>;
 		};
 
-		dma_apbh {
-			manifest_type = "virtual";
-			address_type = "memory";
-			guest_physical_addr = <0x00110000>;
-			physical_size = <0x2000>;
-			device_type = "misc";
-			compatible = "fsl,imx6q-dma-apbh";
-			debug = <0xffff>;
-		};
+		//dma_apbh {
+		//	manifest_type = "virtual";
+		//	address_type = "memory";
+		//	guest_physical_addr = <0x00110000>;
+		//	physical_size = <0x2000>;
+		//	device_type = "misc";
+		//	compatible = "fsl,imx6q-dma-apbh";
+		//	debug = <0xffff>;
+		//};
 
 		priv0 {
 			manifest_type = "virtual";
@@ -243,6 +243,7 @@
 			num_irq = <192>;
 			timer_irq = <29 30>;
 			parent_irq = <6>;
+		//	debug = <0xffff>;
 		};
 
 		pwm1 {
@@ -250,8 +251,13 @@
 			address_type = "memory";
 			guest_physical_addr = <0x02080000>;
 			physical_size = <0x4000>;
-			device_type = "misc";
-			compatible = "zero";
+
+			//device_type = "misc";
+			//compatible = "zero";
+			device_type = "pt";
+			compatible = "simple";
+			memory-passthrough = <0x3>;
+			debug = <0xffff>;
 		};
 
 		pwm2 {
@@ -268,8 +274,13 @@
 			address_type = "memory";
 			guest_physical_addr = <0x02088000>;
 			physical_size = <0x4000>;
-			device_type = "misc";
-			compatible = "zero";
+			//device_type = "misc";
+			//compatible = "zero";
+
+			device_type = "pt";
+			compatible = "simple";
+			memory-passthrough = <0x3>;
+			debug = <0xffff>;
 		};
 
 		pwm4 {
@@ -277,8 +288,13 @@
 			address_type = "memory";
 			guest_physical_addr = <0x0208C000>;
 			physical_size = <0x4000>;
-			device_type = "misc";
-			compatible = "zero";
+
+			device_type = "pt";
+			compatible = "simple";
+			memory-passthrough = <0x3>;
+			debug = <0xffff>;
+			//device_type = "misc";
+			//compatible = "zero";
 		};
 
 		l2x0 {
@@ -323,6 +339,7 @@
 			guest_physical_addr = <0x02188000>;
 			physical_size = <0x4000>;
 			device_type = "misc";
+			debug = <0xffff>;
 			compatible = "zero";
                 };
 
@@ -364,14 +381,14 @@
 			compatible = "zero";
 		};
 
-		sdma {
-			manifest_type = "virtual";
-			address_type = "memory";
-			guest_physical_addr = <0x020ec000>;
-			physical_size = <0x4000>;
-			device_type = "misc";
-			compatible = "zero";
-                };
+		//sdma {
+		//	manifest_type = "virtual";
+		//	address_type = "memory";
+		//	guest_physical_addr = <0x020ec000>;
+		//	physical_size = <0x4000>;
+		//	device_type = "misc";
+		//	compatible = "zero";
+                //};
 
                 asrc {
 			manifest_type = "virtual";
@@ -530,8 +547,29 @@
 			address_type = "memory";
 			guest_physical_addr = <0x020d8000>;
 			physical_size = <0x4000>;
+//			device_type = "misc";
+//			compatible = "zero";
+			//debug = <0xffff>;
+
+			debug = <0xffff>;
+			device_type = "pt";
+			compatible = "simple";
+			memory-passthrough = <0x3>;
+			whitelist = <
+				0x000 0x0000101e
+				0x014 0x0000001f
+				0x018 0x0000001f
+			>;
+		};
+
+		i2c {
+			manifest_type = "virtual";
+			address_type = "memory";
+			guest_physical_addr = <0x021a4000>;
+			physical_size = <0x4000>;
 			device_type = "misc";
 			compatible = "zero";
+			debug = <0xffff>;
 		};
 
 		gpc: gpc@020dc000 {
@@ -561,6 +599,7 @@
 			pdnscr-mask = <0x00003f3f>; /* All non-reserved fields */
 			pgsr-mask = <0x00000001>; /* Power control status */
 
+			debug = <0xffff>;
 		};
 
 		gpt: gpt@02098000 {
@@ -572,6 +611,7 @@
 			compatible = "fsl,imx6q-gpt";
 			clock-frequency = <32000>;
 			interrupts = <87>;
+			//debug = <0xffff>;
 		};
 	};
 };

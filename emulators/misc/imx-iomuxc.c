@@ -81,6 +81,8 @@ static int imx_iomuxc_emulator_write(struct vmm_emudev *edev,
 				  u32 regval,
 				  u32 size)
 {
+	vmm_lwarning("IOMUXC tried to write 0x%"PRIx32" at 0x%"PRIPADDR"\n",
+		     regval, offset);
 	/*
 	 * Do nothing. The emulator is mostly there to provide default
 	 * reset values.

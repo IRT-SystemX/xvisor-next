@@ -31,17 +31,6 @@
 #define IMX_NO_PAD_CTL	0x80000000	/* no pin config need */
 #define IMX_PAD_SION 0x40000000		/* set SION */
 
-/**
- * @dev: a pointer back to containing device
- * @base: the offset to the controller in virtual memory
- */
-struct imx_pinctrl {
-	struct device *dev;
-	struct pinctrl_dev *pctl;
-	void __iomem *base;
-	const struct imx_pinctrl_soc_info *info;
-};
-
 static inline const struct imx_pin_group
 *imx_pinctrl_find_group_by_name(const struct imx_pinctrl_soc_info *info,
 				const char *name)

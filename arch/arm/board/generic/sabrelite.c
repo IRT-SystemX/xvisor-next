@@ -36,6 +36,8 @@
 
 #include <imx-common.h>
 #include <imx-hardware.h>
+#include <drv/clk.h>
+#include <dt-bindings/clock/imx6qdl-clock.h>
 
 /*
  * Initialization functions

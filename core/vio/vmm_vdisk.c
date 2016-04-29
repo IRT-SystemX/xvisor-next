@@ -31,10 +31,11 @@
 #include <libs/stringlib.h>
 #include <libs/mathlib.h>
 
+#define DEBUG
 #undef DEBUG
 
 #ifdef DEBUG
-#define DPRINTF(msg...)			vmm_printf(msg)
+#define DPRINTF(msg...)			vmm_linfo(msg)
 #else
 #define DPRINTF(msg...)
 #endif
@@ -91,8 +92,8 @@ static void vdisk_req_failed(struct vmm_request *r)
 		vdisk->failed(vdisk, vreq);
 	}
 
-	DPRINTF("%s: vdisk=%s lba=0x%llx bcnt=%d\n",
-		__func__, vdisk->name, (u64)r->lba, r->bcnt);
+	vmm_lerror("%s: vdisk=%s lba=0x%llx bcnt=%d\n",
+		   __func__, vdisk->name, (u64)r->lba, r->bcnt);
 }
 
 void vmm_vdisk_set_request_type(struct vmm_vdisk_request *vreq,

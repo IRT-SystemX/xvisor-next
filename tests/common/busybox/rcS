@@ -6,3 +6,16 @@ mkdir -p /dev
 /bin/mount -t devtmpfs devtmpfs /dev
 
 cat /etc/motd
+
+detach() {
+	umount /mnt/sys
+	umount /mnt/dev
+	umount /mnt/proc
+	umount /mnt
+}
+
+mount -t ext4 /dev/vda2 /mnt
+mount --bind /dev /mnt/dev
+mount --bind /sys /mnt/sys
+mount --bind /proc /mnt/proc
+chroot /mnt /bin/bash

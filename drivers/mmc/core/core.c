@@ -53,8 +53,10 @@
  *  Debugging related defines
  */
 #undef CONFIG_MMC_TRACE
+//#define CONFIG_MMC_TRACE
 
 #undef DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #define DPRINTF(msg...)			vmm_printf(msg)
@@ -309,6 +311,7 @@ static int __mmc_set_blocklen(struct mmc_host *host, int len)
 {
 	struct mmc_cmd cmd;
 
+	//vmm_lwarning("%s(%i) has been called\n", __func__, len);
 	cmd.cmdidx = MMC_CMD_SET_BLOCKLEN;
 	cmd.resp_type = MMC_RSP_R1;
 	cmd.cmdarg = len;

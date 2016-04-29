@@ -761,9 +761,9 @@
 	status = "okay";
 };
 
-//&ipu1_di0_disp0 {
-//	remote-endpoint = <&lcd_display_in>;
-//};
+&ipu1_di0_disp0 {
+	remote-endpoint = <&lcd_display_in>;
+};
 
 &ldb {
 	status = "okay";
@@ -781,4 +781,29 @@
 			};
 		};
 	};
+};
+
+&pwm1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_pwm1>;
+	status = "okay";
+};
+
+&pwm3 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_pwm3>;
+	status = "okay";
+};
+
+&pwm4 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_pwm4>;
+	status = "okay";
+};
+
+&i2c2 {
+	clock-frequency = <100000>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_i2c2>;
+	status = "okay";
 };

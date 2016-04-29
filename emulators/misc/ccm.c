@@ -113,12 +113,36 @@ static int imx_ccm_emulator_write(struct vmm_emudev *edev,
 {
 	ccm_t *ccm = edev->priv;
 	u16 reg = offset >> 2;
+	u32 mask = 0, val;
 
 	/* vmm_printf("i.MX CCM write 0x%08x at 0x%08x, mask 0x%08x\n", */
 	/* 	   regval, offset, regmask); */
 
 	vmm_spin_lock(&ccm->lock);
-	ccm->regs[reg] = (ccm->regs[reg] & regmask) | (regval & ~regmask);
+	switch (offset) {
+		case 0x02C: mask = 0x00007e00; break;
+		case 0x034: mask = 0x0003ffff; break;
+		case 0x038: mask = 0x0003ffff; break;
+		case 0x074: mask = 0x0000ffff; break;
+		case 0x060: mask = 0x01ff017f; break;
+		case 0x06C: mask = 0x0f000000; break;
+		case 0x080: mask = 0x0000c000; break;
+		case 0x020: mask = 0x0c000000; break;
+		case 0x018: mask = 0xff83c333; break;
+		case 0x03C: mask = 0x0007fe00; break;
+		case 0x088: mask = 0x00000c00; break;
+	}
+	if (mask != 0) {
+		val = (ccm->regs[reg] & (~mask)) | (regval & mask);
+		//val = regval & mask;
+		vmm_lwarning("ccm: pass-through 0x%"PRIx32" (masked: 0x%"PRIx32", was 0x%"PRIx32") => %"PRIPADDR"\n",
+			     regval, val, ccm->regs[reg], offset);
+		vmm_host_memory_write(edev->reg->hphys_addr + offset,
+				      &val, sizeof(u32), false);
+	} else {
+		val = (ccm->regs[reg] & regmask) | (regval & ~regmask);
+	}
+	ccm->regs[reg] = val;
 	vmm_spin_unlock(&ccm->lock);
 
 	return VMM_OK;

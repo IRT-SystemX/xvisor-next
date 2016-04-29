@@ -25,6 +25,7 @@
  * functions.
  */
 
+#define DEV_DEBUG 1
 #include <vmm_modules.h>
 #include <vmm_devdrv.h>
 #include <vmm_devres.h>
@@ -41,6 +42,10 @@
 
 #include <imx-common.h>
 #include <mxc_dispdrv.h>
+
+#ifndef DEV_DEBUG
+# define DEV_DEBUG 1
+#endif
 
 #define MODULE_AUTHOR		"Jimmy Durand Wesolowski"
 #define MODULE_DESC		"MXC LDB driver"
@@ -519,7 +524,7 @@ static int ldb_ipu_ldb_route(int ipu, int di, struct ldb_data *ldb, int channel)
 	return 0;
 }
 
-const static unsigned char lvds_enables[] = {
+static const unsigned char lvds_enables[] = {
 	[LDB_SPL_DI0] = LDB_SPLIT_MODE_EN | LDB_CH0_MODE_EN_TO_DI0
 		| LDB_CH1_MODE_EN_TO_DI0,
 	[LDB_SPL_DI1] = LDB_SPLIT_MODE_EN | LDB_CH0_MODE_EN_TO_DI1

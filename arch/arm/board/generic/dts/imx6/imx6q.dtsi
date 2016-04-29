@@ -622,6 +622,26 @@
 						 <&clks IMX6QDL_CLK_PWM4>;
 					clock-names = "ipg", "per";
 				};
+
+				pwm3: pwm@02088000 {
+					#pwm-cells = <2>;
+					compatible = "fsl,imx6q-pwm", "fsl,imx27-pwm";
+					reg = <0x02088000 0x4000>;
+					interrupts = <0 85 IRQ_TYPE_LEVEL_HIGH>;
+					clocks = <&clks IMX6QDL_CLK_IPG>,
+						 <&clks IMX6QDL_CLK_PWM3>;
+					clock-names = "ipg", "per";
+				};
+
+				pwm1: pwm@02080000 {
+					#pwm-cells = <2>;
+					compatible = "fsl,imx6q-pwm", "fsl,imx27-pwm";
+					reg = <0x02080000 0x4000>;
+					interrupts = <0 83 IRQ_TYPE_LEVEL_HIGH>;
+					clocks = <&clks IMX6QDL_CLK_IPG>,
+						 <&clks IMX6QDL_CLK_PWM1>;
+					clock-names = "ipg", "per";
+				};
 			};
 
 			fec: ethernet@02188000 {
@@ -694,7 +714,8 @@
 				reg = <0x021a0000 0x4000>;
 				interrupts = <GIC_SPI 36 IRQ_TYPE_LEVEL_HIGH>;
 				clocks = <&clks IMX6QDL_CLK_I2C1>;
-				status = "disabled";
+				status = "okay";
+				//status = "disabled";
 			};
 
 			i2c2: i2c@021a4000 {
@@ -704,7 +725,7 @@
 				reg = <0x021a4000 0x4000>;
 				interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
 				clocks = <&clks IMX6QDL_CLK_I2C2>;
-				status = "disabled";
+				status = "okay";
 			};
 
 			i2c3: i2c@021a8000 {

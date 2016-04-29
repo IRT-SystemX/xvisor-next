@@ -74,6 +74,8 @@ int vmm_blockdev_fail_request(struct vmm_request *r)
 		return VMM_EFAIL;
 	}
 
+	vmm_lerror("%s() with request (lba = %"PRIu64")\n",
+		   __func__, r->lba);
 	if (r->failed) {
 		r->failed(r);
 	}

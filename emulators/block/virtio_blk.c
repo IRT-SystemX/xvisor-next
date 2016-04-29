@@ -231,8 +231,8 @@ static void virtio_blk_req_completed(struct vmm_vdisk *vdisk,
 static void virtio_blk_req_failed(struct vmm_vdisk *vdisk,
 				  struct vmm_vdisk_request *vreq)
 {
-	DPRINTF("%s: vdisk=%s\n",
-		__func__, vmm_vdisk_name(vdisk));
+	vmm_lerror("%s: vdisk=%s\n",
+		   __func__, vmm_vdisk_name(vdisk));
 
 	virtio_blk_req_done(vmm_vdisk_priv(vdisk),
 			    container_of(vreq, struct virtio_blk_dev_req, r),

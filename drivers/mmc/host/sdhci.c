@@ -127,7 +127,7 @@ static void sdhci_reset(struct sdhci_host *host, u8 mask)
 	sdhci_writeb(host, mask, SDHCI_SOFTWARE_RESET);
 	while (sdhci_readb(host, SDHCI_SOFTWARE_RESET) & mask) {
 		if (timeout == 0) {
-			vmm_printf("%s: Reset 0x%x never completed.\n",
+			vmm_lerror("%s: Reset 0x%x never completed.\n",
 				   __func__, mask);
 			return;
 		}
@@ -178,11 +178,11 @@ static int sdhci_transfer_dma(struct sdhci_host *host,
 			      struct mmc_data *data)
 {
 	int rc = VMM_OK;
-	u64 timeout = 100000000LL;
+	u64 timeout = 300000000LL;
 
 	rc = vmm_completion_wait_timeout(&host->wait_dma, &timeout);
 	if (VMM_ETIMEDOUT == rc) {
-		vmm_printf("%s: Transfer data timeout (%"PRId64")\n", __func__,
+		vmm_lcritical("%s: Transfer data timeout (%"PRId64")\n", __func__,
 			   timeout);
 		return rc;
 	}
@@ -216,7 +216,7 @@ static int sdhci_transfer_data(struct sdhci_host *host,
 	do {
 		stat = sdhci_readl(host, SDHCI_INT_STATUS);
 		if (stat & SDHCI_INT_ERROR) {
-			vmm_printf("%s: Error detected in status(0x%X)!\n",
+			vmm_lerror("%s: Error detected in status(0x%X)!\n",
 				   __func__, stat);
 			return VMM_EFAIL;
 		}
@@ -236,7 +236,7 @@ static int sdhci_transfer_data(struct sdhci_host *host,
 		if (timeout-- > 0) {
 			vmm_udelay(10);
 		} else {
-			vmm_printf("%s: Transfer data timeout\n", __func__);
+			vmm_lerror("%s: Transfer data timeout\n", __func__);
 			return VMM_ETIMEDOUT;
 		}
 	} while (!(stat & SDHCI_INT_DATA_END));
@@ -272,8 +272,10 @@ int sdhci_send_command(struct mmc_host *mmc,
 	/* Wait max 10 ms */
 	timeout = 10;
 
-	sdhci_writel(host, SDHCI_INT_ALL_MASK, SDHCI_INT_STATUS);
-	mask = SDHCI_CMD_INHIBIT | SDHCI_DATA_INHIBIT;
+	//sdhci_writel(host, SDHCI_INT_ALL_MASK, SDHCI_INT_STATUS);
+	mask = SDHCI_CMD_INHIBIT;
+	if ((data != NULL) || (data->flags & MMC_RSP_BUSY))
+		mask |= SDHCI_DATA_INHIBIT;
 
 	/* We shouldn't wait for data inihibit for stop commands, even
 	   though they might use busy signaling */
@@ -283,8 +285,8 @@ int sdhci_send_command(struct mmc_host *mmc,
 
 	while (sdhci_readl(host, SDHCI_PRESENT_STATE) & mask) {
 		if (timeout == 0) {
-			vmm_printf("%s: Controller never released "
-				   "inhibit bit(s).\n", __func__);
+			vmm_lcritical("%s: Controller never released "
+				      "inhibit bit(s).\n", __func__);
 			sdhci_reset(host, SDHCI_RESET_CMD);
 
 			return VMM_EIO;
@@ -377,9 +379,9 @@ int sdhci_send_command(struct mmc_host *mmc,
 			if (host->quirks & SDHCI_QUIRK_BROKEN_R1B) {
 				return VMM_OK;
 			} else {
-				vmm_printf("%s: Status update timeout on CMD%d, arg "
-					   "0x%08x!\n",__func__, cmd->cmdidx,
-					   cmd->cmdarg);
+				vmm_lcritical("%s(SDMA): Status update timeout on CMD%d, arg "
+					      "0x%08x!\n",__func__, cmd->cmdidx,
+					      cmd->cmdarg);
 				return VMM_ETIMEDOUT;
 			}
 		}
@@ -401,9 +403,9 @@ int sdhci_send_command(struct mmc_host *mmc,
 			if (host->quirks & SDHCI_QUIRK_BROKEN_R1B) {
 				return VMM_OK;
 			} else {
-				vmm_printf("%s: Status update timeout on CMD%d, arg "
-					   "0x%08x!\n",__func__, cmd->cmdidx,
-					   cmd->cmdarg);
+				vmm_lcritical("%s: Status update timeout on CMD%d, arg "
+					      "0x%08x!\n",__func__, cmd->cmdidx,
+					      cmd->cmdarg);
 				return VMM_ETIMEDOUT;
 			}
 		}
@@ -442,8 +444,9 @@ int sdhci_send_command(struct mmc_host *mmc,
 		return VMM_OK;
 	}
 
-	sdhci_reset(host, SDHCI_RESET_CMD);
-	sdhci_reset(host, SDHCI_RESET_DATA);
+	//	FIXME Destroys the SD card
+//	sdhci_reset(host, SDHCI_RESET_CMD);
+//	sdhci_reset(host, SDHCI_RESET_DATA);
 
 	if (stat & SDHCI_INT_TIMEOUT) {
 		return VMM_ETIMEDOUT;
@@ -500,7 +503,7 @@ static int sdhci_set_clock(struct mmc_host *mmc, u32 clock)
 	while (!((clk = sdhci_readw(host, SDHCI_CLOCK_CONTROL))
 		& SDHCI_CLOCK_INT_STABLE)) {
 		if (timeout == 0) {
-			vmm_printf("%s: Internal clock never stabilised.\n",
+			vmm_lcritical("%s: Internal clock never stabilised.\n",
 				   __func__);
 			return VMM_EFAIL;
 		}
@@ -686,6 +689,7 @@ static vmm_irq_return_t sdhci_irq_handler(int irq_no, void *dev)
 
 	intmask = sdhci_readl(host, SDHCI_INT_STATUS);
 
+//	vmm_lnotice("sdhci IRQ handler: %i, 0x%"PRIx32"\n", irq_no, intmask);
 	if (!intmask || intmask == 0xffffffff) {
 		result = VMM_IRQ_NONE;
 		goto out;
@@ -717,15 +721,17 @@ static vmm_irq_return_t sdhci_irq_handler(int irq_no, void *dev)
 		mmc_detect_card_change(host->mmc, 200);
 	}
 
+//	vmm_lnotice("mask is still 0x%"PRIx32"\n", intmask);
 	if (intmask & SDHCI_INT_CMD_MASK) {
 		sdhci_writel(host, intmask & SDHCI_INT_CMD_MASK,
 			SDHCI_INT_STATUS);
+//		vmm_lwarning("Trigerring...\n");
 		sdhci_cmd_irq(host, intmask & SDHCI_INT_CMD_MASK);
 	}
 
 	if (intmask & (SDHCI_INT_DATA_MASK | SDHCI_INT_DMA_END)) {
 		if (!(intmask & SDHCI_INT_DATA_MASK)) {
-			vmm_printf("DMA ended, transfer not complete!\n");
+			vmm_lcritical("DMA ended, transfer not complete!\n");
 		}
 		sdhci_writel(host, intmask & (SDHCI_INT_DATA_MASK |
 					      SDHCI_INT_DMA_END),
@@ -738,7 +744,7 @@ static vmm_irq_return_t sdhci_irq_handler(int irq_no, void *dev)
 	intmask &= ~SDHCI_INT_ERROR;
 
 	if (intmask & SDHCI_INT_BUS_POWER) {
-		vmm_printf("%s: Card is consuming too much power!\n",
+		vmm_lcritical("%s: Card is consuming too much power!\n",
 			   mmc_hostname(host->mmc));
 		sdhci_writel(host, SDHCI_INT_BUS_POWER, SDHCI_INT_STATUS);
 	}
@@ -746,7 +752,7 @@ static vmm_irq_return_t sdhci_irq_handler(int irq_no, void *dev)
 	intmask &= ~SDHCI_INT_BUS_POWER;
 
 	if (intmask) {
-		vmm_printf("SDHCI: Unexpected interrupt 0x%08x\n", intmask);
+		vmm_lcritical("SDHCI: Unexpected interrupt 0x%08x\n", intmask);
 		sdhci_writel(host, intmask, SDHCI_INT_STATUS);
 	}
 
@@ -812,7 +818,7 @@ int sdhci_add_host(struct sdhci_host *host)
 		mmc->f_max *= 1000000;
 	}
 	if (mmc->f_max == 0) {
-		vmm_printf("%s: No base clock frequency\n", __func__);
+		vmm_lcritical("%s: No base clock frequency\n", __func__);
 		rc = VMM_EINVALID;
 		goto free_nothing;
 	}
@@ -870,14 +876,14 @@ int sdhci_add_host(struct sdhci_host *host)
 			host->mmc->b_max = (SDHCI_DMA_MAX_BUF) / 512;
 		}
 		if (!host->aligned_buffer) {
-			vmm_printf("%s: host buffer alloc failed!!!\n",
+			vmm_lalert("%s: host buffer alloc failed!!!\n",
 				   __func__);
 			rc = VMM_ENOMEM;
 			goto free_nothing;
 		}
 		if ((host->quirks & SDHCI_QUIRK_32BIT_DMA_ADDR) &&
 		    (((u32)host->aligned_buffer) & 0x7)) {
-			vmm_printf("%s: host buffer not aligned to "
+			vmm_lcritical("%s: host buffer not aligned to "
 				   "8-byte boundary!!!\n", __func__);
 			rc = VMM_EFAIL;
 			goto free_host_buffer;
@@ -928,7 +934,7 @@ int sdhci_add_host(struct sdhci_host *host)
 		goto remove_host;
 	}
 
-	vmm_printf("%s: SDHCI controller %s at 0x%llx irq %d [%s]\n",
+	vmm_lnotice("%s: SDHCI controller %s at 0x%llx irq %d [%s]\n",
 		   mmc_hostname(mmc), ver,
 		   (unsigned long long)iopaddr, host->irq,
 		   (host->sdhci_caps & SDHCI_CAN_DO_SDMA) ? "DMA" : "PIO");

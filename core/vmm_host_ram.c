@@ -121,12 +121,15 @@ int vmm_host_ram_reserve(physical_addr_t pa, physical_size_t sz)
 	u32 i, bn, bcnt, bpos, bfree;
 	irq_flags_t flags;
 	struct vmm_host_ram_bank *bank;
+        const u64 pa_sz = (u64)pa + (u64)sz;
+        u64 bk_span;
 
 	for (bn = 0; bn < rctrl.bank_count; bn++) {
 		bank = &rctrl.banks[bn];
+                bk_span = (u64)bank->start + (u64)bank->size;
 
 		if ((pa < bank->start) ||
-		    ((bank->start + bank->size) < (pa + sz))) {
+		    (bk_span < pa_sz)) {
 			continue;
 		}
 

@@ -1,0 +1,49 @@
+/*
+ * Copyright (C) 2016 Open Wide
+ *               2016 Institut de Recherche Technologique SystemX
+
+ * Originally from Jean-Christophe Dubois, and modified by
+ * Jean Guyomarc'h (jean.guyomarch@openwide.fr)
+ * to split device tree files between i.MX6-specific and Sabrelite-specific
+ * definitions.
+ */
+
+/dts-v1/;
+
+#include "nitrogen6_max.dtsi"
+
+/ {
+	vmm {
+		net {
+			br0 {
+				device_type = "netswitch";
+				compatible = "bridge";
+			};
+		};
+	};
+
+	chosen {
+		console = &SERIAL2;
+		bootcmd =
+			"backlight brightness backlight_lvds 6",
+			"fb logo fb0",
+
+			/* Mount SD device */
+			"vfs mount mmc0p0 / 2",
+
+			/* Load guest0 device tree from file */
+			"vfs fdt_load /guests guest0 /images/arm32/nitrogen6_max.dtb mem0,physical_size,physsize,0x30000000 net0,switch,string,br0",
+
+			/* Create guest0 */
+			"guest create guest0",
+
+			/* Load guest0 images */
+			"vfs guest_load_list guest0 /images/arm32/nitrogen6_max/nor_flash.list",
+
+			/* Print banner */
+			"vfs cat /system/banner.txt",
+
+			/* Umount the SD/MMC card */
+			"vfs umount /";
+	};
+};

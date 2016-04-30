@@ -1,4 +1,4 @@
-#/**
+#
 # Copyright (c) 2014 Jean-Christophe Dubois.
 # All rights reserved.
 #
@@ -18,8 +18,10 @@
 #
 # @file objects.mk
 # @author Jean-Christophe Dubois (jcd@tribudubois.net)
+# @author Jean Guyomarc'h (jean.guyomarch@openwide.fr)
 # @brief list of i.MX6 DTBs.
-# */
+#
 
 board-dtbs-$(CONFIG_ARMV7A)+=dts/imx6/sabrelite-a9/one_guest_sabrelite-a9.dtb
 board-dtbs-$(CONFIG_ARMV7A)+=dts/imx6/sabrelite-a9/two_guest_sabrelite-a9.dtb
+board-dtbs-$(CONFIG_ARMV7A)+=dts/imx6/nitrogen6_max/one_guest_nitrogen6_max.dtb

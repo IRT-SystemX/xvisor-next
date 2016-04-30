@@ -156,6 +156,17 @@
 				#interrupt-cells = <2>;
 			};
 
+			gpio6: gpio@020b0000 {
+				compatible = "fsl,imx6q-gpio", "fsl,imx35-gpio";
+				reg = <0x020b0000 0x4000>;
+				interrupts = <0 76 IRQ_TYPE_LEVEL_HIGH>,
+					     <0 77 IRQ_TYPE_LEVEL_HIGH>;
+				gpio-controller;
+				#gpio-cells = <2>;
+				interrupt-controller;
+				#interrupt-cells = <2>;
+			};
+
 			gpio7: gpio@020b4000 {
 				compatible = "fsl,imx6q-gpio", "fsl,imx35-gpio";
 				reg = <0x020b4000 0x4000>;

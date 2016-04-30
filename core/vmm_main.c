@@ -284,12 +284,16 @@ static void system_init_work(struct vmm_work *work)
 	vmm_printf("init: board final\n");
 	ret = arch_board_final_init();
 	if (ret) {
+           vmm_lalert("Fail\n");
 		goto fail;
 	}
 
 	/* Schedule system post-init work */
 	INIT_WORK(&sys_postinit, &system_postinit_work);
+
+        vmm_printf("== before sched\n");
 	vmm_workqueue_schedule_work(NULL, &sys_postinit);
+        vmm_printf("== DONE\n");
 
 	return;
 

@@ -1,5 +1,6 @@
 /**
- * Copyright (C) 2014 Institut de Recherche Technologique SystemX and OpenWide.
+ * Copyright (C) 2014, 2016 Open Wide
+ *               2014, 2016 Institut de Recherche Technologique SystemX
  * All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -16,7 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * @file sabrelite.c
+ * @file imx6qdl.c
  * @author Jimmy Durand Wesolowski (jimmy.durand-wesolowski@openwide.fr)
  * @brief Freescale i.MX6 Sabrelite board specific code
  *

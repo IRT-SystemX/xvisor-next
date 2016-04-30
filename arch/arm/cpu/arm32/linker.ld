@@ -157,7 +157,7 @@ SECTIONS
 	{
 		PROVIDE(_svc_stack_start = .);
 		. = . + (CONFIG_IRQ_STACK_SIZE * CONFIG_CPU_COUNT);
-		. = ALIGN(8);
+		. = ALIGN(4);
 		PROVIDE(_svc_stack_end = .);
         }
 
@@ -165,7 +165,7 @@ SECTIONS
 	{
 		PROVIDE(_abt_stack_start = .);
 		. = . + (0x100 * CONFIG_CPU_COUNT);
-		. = ALIGN(8);
+		. = ALIGN(4);
 		PROVIDE(_abt_stack_end = .);
 	}
 
@@ -173,7 +173,7 @@ SECTIONS
 	{
 		PROVIDE(_und_stack_start = .);
 		. = . + (0x100 * CONFIG_CPU_COUNT);
-		. = ALIGN(8);
+		. = ALIGN(4);
 		PROVIDE(_und_stack_end = .);
 	}
 
@@ -181,7 +181,7 @@ SECTIONS
 	{
 		PROVIDE(_irq_stack_start = .);
 		. = . + (0x100 * CONFIG_CPU_COUNT);
-		. = ALIGN(8);
+		. = ALIGN(4);
 		PROVIDE(_irq_stack_end = .);
 	}
 
@@ -189,7 +189,7 @@ SECTIONS
 	{
 		PROVIDE(_fiq_stack_start = .);
 		. = . + (0x100 * CONFIG_CPU_COUNT);
-		. = ALIGN(8);
+		. = ALIGN(4);
 		PROVIDE(_fiq_stack_end = .);
 	}
 

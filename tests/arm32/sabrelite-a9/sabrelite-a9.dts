@@ -46,7 +46,7 @@
 			interrupts = <41>;
 			host-interrupts = <9>;
 			memory-passthrough = <0x3>;
-			debug = <0xffffffff>;
+			//debug = <0xffffffff>;
 			device_type = "pt";
 			compatible = "simple";
 		};
@@ -61,7 +61,7 @@
 			memory-passthrough = <0x3>;
 			device_type = "pt";
 			compatible = "simple";
-			debug = <0xffffffff>;
+			//debug = <0xffffffff>;
 		};
 
 		gpu_vg {
@@ -123,7 +123,7 @@
 			memory-passthrough = <0x3>;
 			device_type = "pt";
 			compatible = "simple";
-			debug = <0xffff>;
+			///debug = <0xffff>;
 		};
 
 		ipu2 {
@@ -136,7 +136,7 @@
 			host-interrupts = <7 8>;
 			device_type = "pt";
 			compatible = "simple";
-			debug = <0xffff>;
+			///debug = <0xffff>;
 		};
 
 		iomuxc {

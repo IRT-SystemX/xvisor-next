@@ -30,9 +30,11 @@
 #include <vmm_heap.h>
 #include <vmm_stdio.h>
 #include <vmm_host_irq.h>
+#include <vmm_host_io.h>
 #include <vmm_host_irqdomain.h>
 #include <vmm_modules.h>
 #include <vmm_host_aspace.h>
+#include <vmm_resource.h>
 #include <vmm_devtree.h>
 #include <vmm_devemu.h>
 #include <vmm_devemu_debug.h>
@@ -64,6 +66,7 @@ struct xlist_item {
 struct simple_state {
 	char name[64];
 	struct vmm_guest *guest;
+	virtual_addr_t iomem;
 	u32 irq_count;
 	u32 *host_irqs;
 	u32 *guest_irqs;
@@ -84,28 +87,41 @@ static int simple_emulator_read(struct vmm_emudev *edev,
                                 u32 *dst,
                                 u32 size)
 {
-        const struct simple_state *s = edev->priv;
-        int ret;
+        struct simple_state const *const s = edev->priv;
+	void *addr = (void *)(s->iomem + offset);
 
         /* Ignore if memoty pt READ not enabled */
         if (!(s->memory_pt & MEMORY_PT_READ)) {
                 return VMM_OK;
         }
 
-        ret = vmm_host_memory_read(edev->reg->hphys_addr + offset,
-                                   dst, size, false);
-
-        return (ret == size) ? VMM_OK : VMM_EFAIL;
+	switch (size) {
+	case 1:
+		*dst = vmm_readb(addr);
+		break;
+	case 2:
+		*dst = vmm_readw(addr);
+		break;
+	case 4:
+		*dst = vmm_readl(addr);
+		break;
+	default:
+		vmm_lerror("Unhandled size %"PRIu32"\n", size);
+		return VMM_EFAIL;
+	}
+        return VMM_OK;
 }
 
 static int simple_emulator_write(struct vmm_emudev *edev,
                                  physical_addr_t offset,
-                                 u32 val,
                                  u32 mask,
+                                 u32 val,
                                  u32 size)
 {
         const struct simple_state *s = edev->priv;
+	void *addr = (void *)(s->iomem + offset);
         int ret = VMM_OK;
+	u32 oldval;
 	u32 i;
 	bool write = (s->whitelist) ? FALSE : TRUE;
 	u32 reg;
@@ -115,6 +131,7 @@ static int simple_emulator_write(struct vmm_emudev *edev,
                 return VMM_OK;
         }
 
+	oldval = val;
 	if (s->xlist && s->whitelist) {
 		for (i = 0; i < s->xlist_len; i++) {
 			if (offset == s->xlist[i].offset) {
@@ -124,22 +141,52 @@ static int simple_emulator_write(struct vmm_emudev *edev,
 					goto end;
 				}
 				val = (reg & ~s->xlist[i].mask) | (val & s->xlist[i].mask);
+
+				if (vmm_devemu_get_debug_info(edev) & (1 << 8)) {
+					vmm_lnotice("%s (pass-through): 0x%"PRIx32" (query=0x%"PRIx32", oldreal=0x%"PRIx32", mask=0x%"PRIx32") => %"PRIPADDR"\n"
+						  ,
+						  edev->node->name,
+						  val, oldval, reg, s->xlist[i].mask,
+						  offset);
+				}
 				break;
 			}
 		}
 	}
 
 	if (write) {
-	//	if (vmm_devemu_debug_write(edev)) {
-	//		vmm_linfo("write allowed\n");
-	//	}
-		ret = vmm_host_memory_write(edev->reg->hphys_addr + offset,
-					    &val, size, false);
-		return (ret == size) ? VMM_OK : VMM_EFAIL;
-	} else {
-		if (vmm_devemu_debug_write(edev)) {
-			vmm_lnotice("write denied\n");
+		if (val != oldval) {
+			vmm_lalert("%s (pass-through): 0x%"PRIx32" (query=0x%"PRIx32", oldreal=0x%"PRIx32", mask=0x%"PRIx32") => %"PRIPADDR"\n"
+				   ,
+				   edev->node->name,
+				   val, oldval, reg, s->xlist[i].mask,
+				   offset);
 		}
+		//vmm_lwarning("%s: About to write (PT) to offset %"PRIPADDR"\n", edev->node->name, offset);
+		switch (size) {
+			case 1:
+				vmm_writeb(val & 0xff, addr);
+				break;
+			case 2:
+				vmm_writew(val & 0xffff, addr);
+				break;
+			case 4:
+				vmm_writel(val & 0xffffffff, addr);
+				break;
+			default:
+				vmm_lerror("Unhandled size %"PRIu32"\n", size);
+				return VMM_EFAIL;
+		}
+
+		return VMM_OK;
+//		ret = vmm_host_memory_write(edev->reg->hphys_addr + offset,
+//					    &val, size, false);
+//		return (ret == size) ? VMM_OK : VMM_EFAIL;
+	} else {
+		//	if (vmm_devemu_debug_write(edev)) {
+		vmm_lerror("%s (pt) write denied at %"PRIPADDR" (0x%"PRIx32")\n",
+			   edev->node->name, offset, oldval);
+		//	}
 	}
 end:
 	return ret;
@@ -155,9 +202,9 @@ static vmm_irq_return_t simple_routed_irq(int irq, void *dev)
 	struct vmm_emudev *edev = dev;
 	struct simple_state *s = edev->priv;
 
-//	if (vmm_devemu_debug_irq(edev)) {
-		vmm_lwarning("pt/%s: re-routing IRQ %i\n", s->name, irq);
-//	}
+	//	if (vmm_devemu_debug_irq(edev)) {
+	vmm_lwarning("pt/%s: re-routing IRQ %i\n", s->name, irq);
+	//	}
 
 	/* Find guest irq */
 	for (i = 0; i < s->irq_count; i++) {
@@ -224,7 +271,7 @@ static int simple_emulator_probe(struct vmm_guest *guest,
 	strlcpy(s->name, guest->name, sizeof(s->name));
 	strlcat(s->name, "/", sizeof(s->name));
 	if (strlcat(s->name, edev->node->name, sizeof(s->name)) >=
-							sizeof(s->name)) {
+	    sizeof(s->name)) {
 		rc = VMM_EOVERFLOW;
 		goto simple_emulator_probe_freestate_fail;
 	}
@@ -233,21 +280,36 @@ static int simple_emulator_probe(struct vmm_guest *guest,
 	s->irq_count = vmm_devtree_irq_count(edev->node);
 	s->guest_irqs = NULL;
 	s->host_irqs = NULL;
-        s->memory_pt = MEMORY_PT_NONE;
+	s->memory_pt = MEMORY_PT_NONE;
 
-        /* Is it a memory pass-though? */
-        i = vmm_devtree_attrlen(edev->node, MEMORY_PASSTHROUGH_ATTR) / sizeof(u32);
-        if (i > 0) {
-                rc = vmm_devtree_read_u32_atindex(edev->node,
-                                                  MEMORY_PASSTHROUGH_ATTR,
-                                                  &s->memory_pt, 0);
-                if (s->memory_pt >= __MEMORY_PT_LAST) {
-                        rc = VMM_EINVALID;
-                        vmm_printf("*** Invalid "MEMORY_PASSTHROUGH_ATTR" value: "
-                                   "0x%"PRIx32"\n", s->memory_pt);
-                        goto simple_emulator_probe_freestate_fail;
-                }
-        }
+	/* Is it a memory pass-though? */
+	i = vmm_devtree_attrlen(edev->node, MEMORY_PASSTHROUGH_ATTR) / sizeof(u32);
+	if (i > 0) {
+		rc = vmm_devtree_read_u32_atindex(edev->node,
+						  MEMORY_PASSTHROUGH_ATTR,
+						  &s->memory_pt, 0);
+		if (s->memory_pt >= __MEMORY_PT_LAST) {
+			rc = VMM_EINVALID;
+			vmm_printf("*** Invalid "MEMORY_PASSTHROUGH_ATTR" value: "
+				   "0x%"PRIx32"\n", s->memory_pt);
+			goto simple_emulator_probe_freestate_fail;
+		}
+	}
+
+
+	const physical_size_t sz = VMM_PAGE_SIZE;
+	const physical_addr_t pa = edev->reg->gphys_addr;
+
+		vmm_lwarning("iomap(0x%"PRIPADDR" - %"PRISIZE")\n",
+			   pa, sz);
+	vmm_request_mem_region(pa, sz, edev->node->name);	
+	s->iomem = vmm_host_iomap(pa, sz);
+	if (!s->iomem) {
+		vmm_lerror("Failed to iomap(0x%"PRIPADDR" - %"PRISIZE")\n",
+			   pa, sz);
+		goto simple_emulator_probe_freestate_fail;
+	}
+
 
 	s->whitelist = 0;
 	i = vmm_devtree_attrlen(edev->node, WHITELIST_ATTR) / (sizeof(u32) * 2);
@@ -256,10 +318,10 @@ static int simple_emulator_probe(struct vmm_guest *guest,
 		s->xlist_len = i;
 		s->xlist = vmm_malloc(sizeof(struct xlist_item) * s->xlist_len);
 		rc = vmm_devtree_read_u32_array(edev->node, WHITELIST_ATTR,
-						  (u32 *)s->xlist, s->xlist_len * 2);
-		for (i = 0; i < s->xlist_len; i++) {
-			vmm_lnotice("iomuxc: %x -> %x\n", s->xlist[i].offset, s->xlist[i].mask);
-		}
+						(u32 *)s->xlist, s->xlist_len * 2);
+//		for (i = 0; i < s->xlist_len; i++) {
+//			vmm_lnotice("iomuxc: %x -> %x\n", s->xlist[i].offset, s->xlist[i].mask);
+//		}
 	}
 
 	i = vmm_devtree_attrlen(edev->node, "host-interrupts") / sizeof(u32);
@@ -268,6 +330,7 @@ static int simple_emulator_probe(struct vmm_guest *guest,
 		goto simple_emulator_probe_freestate_fail;
 	}
 
+#if 1
 	if (s->irq_count) {
 		s->host_irqs = vmm_zalloc(sizeof(u32) * s->irq_count);
 		if (!s->host_irqs) {
@@ -295,23 +358,21 @@ static int simple_emulator_probe(struct vmm_guest *guest,
 			goto simple_emulator_probe_cleanupirqs_fail;
 		}
 
-                vmm_printf("%s: binding guest IRQ %"PRIu32" to host IRQ %"PRIu32"\n",
-                           s->name, s->guest_irqs[i], s->host_irqs[i]);
+		vmm_printf("%s: binding guest IRQ %"PRIu32" to host IRQ %"PRIu32"\n",
+			   s->name, s->guest_irqs[i], s->host_irqs[i]);
 
-            //    vmm_host_irq_enable(s->host_irqs[i]);
+		//    vmm_host_irq_enable(s->host_irqs[i]);
 
-//		rc = vmm_host_irq_mark_routed(s->host_irqs[i]);
-//		if (rc) {
-//			goto simple_emulator_probe_cleanupirqs_fail;
-//		}
+		//		rc = vmm_host_irq_mark_routed(s->host_irqs[i]);
+		//		if (rc) {
+		//			goto simple_emulator_probe_cleanupirqs_fail;
+		//		}
 
 		struct vmm_host_irqdomain *dom = vmm_host_irqdomain_get(s->guest_irqs[i]);
 		const u32 tab[3] = { 0x0, s->host_irqs[i], 0x4 };
 		unsigned int type;
 		unsigned long hwirq;
 
-		 vmm_lerror("Domain %p, base,count,end = %u %u %u\n",
-			    dom, dom->base, dom->count,dom->end);
 		rc = vmm_host_irqdomain_xlate(dom, tab, 3, &hwirq, &type);
 		if (rc) {
 			vmm_lalert("Fail to xlate\n");
@@ -327,15 +388,16 @@ static int simple_emulator_probe(struct vmm_guest *guest,
 		rc = vmm_host_irq_register(hirq, s->name,
 					   simple_routed_irq, edev);
 		if (rc) {
-//			vmm_host_irq_unmark_routed(s->host_irqs[i]);
+			//			vmm_host_irq_unmark_routed(s->host_irqs[i]);
 			goto simple_emulator_probe_cleanupirqs_fail;
 		}
 
 		irq_reg_count++;
 	}
+#endif
 
-        vmm_printf("%s: simple/pt. Memory flags: 0x%"PRIx32"\n",
-                   s->name, s->memory_pt);
+	vmm_printf("%s: simple/pt. Memory flags: 0x%"PRIx32"\n",
+		   s->name, s->memory_pt);
 	edev->priv = s;
 
 	return VMM_OK;
@@ -379,26 +441,26 @@ static int simple_emulator_remove(struct vmm_emudev *edev)
 	}
 	vmm_free(s);
 
-        vmm_printf("======= REMOVING %p %p\n", edev, edev->priv);
+	vmm_printf("======= REMOVING %p %p\n", edev, edev->priv);
 	edev->priv = NULL;
 
 	return VMM_OK;
 }
 
 static struct vmm_devtree_nodeid simple_emuid_table[] = {
-	{ .type = "pt", .compatible = "simple", },
-	{ /* end of list */ },
+		{ .type = "pt", .compatible = "simple", },
+		{ /* end of list */ },
 };
 
 VMM_DECLARE_EMULATOR_SIMPLE(simple_emulator,
-                            "simple",
-                            simple_emuid_table,
-                            VMM_DEVEMU_NATIVE_ENDIAN,
-                            simple_emulator_probe,
-                            simple_emulator_remove,
-                            simple_emulator_reset,
-                            simple_emulator_read,
-                            simple_emulator_write);
+			    "simple",
+			    simple_emuid_table,
+			    VMM_DEVEMU_NATIVE_ENDIAN,
+			    simple_emulator_probe,
+			    simple_emulator_remove,
+			    simple_emulator_reset,
+			    simple_emulator_read,
+			    simple_emulator_write);
 
 static int __init simple_emulator_init(void)
 {
@@ -411,8 +473,8 @@ static void __exit simple_emulator_exit(void)
 }
 
 VMM_DECLARE_MODULE(MODULE_DESC,
-			MODULE_AUTHOR,
-			MODULE_LICENSE,
-			MODULE_IPRIORITY,
-			MODULE_INIT,
-			MODULE_EXIT);
+		   MODULE_AUTHOR,
+		   MODULE_LICENSE,
+		   MODULE_IPRIORITY,
+		   MODULE_INIT,
+		   MODULE_EXIT);

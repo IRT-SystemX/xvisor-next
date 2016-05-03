@@ -1,0 +1,18 @@
+[guest0/uart0] [    0.169369] imx-ipuv3 2400000.ipu: cm_reg:   0x02600000
+[guest0/uart0] [    0.169370] imx-ipuv3 2400000.ipu: idmac:    0x02608000
+[guest0/uart0] [    0.169370] imx-ipuv3 2400000.ipu: cpmem:    0x02700000
+[guest0/uart0] [    0.169371] imx-ipuv3 2400000.ipu: csi0:     0x02630000
+[guest0/uart0] [    0.169371] imx-ipuv3 2400000.ipu: csi1:     0x02638000
+[guest0/uart0] [    0.169372] imx-ipuv3 2400000.ipu: ic:       0x02620000
+[guest0/uart0] [    0.169372] imx-ipuv3 2400000.ipu: disp0:    0x02640000
+[guest0/uart0] [    0.169373] imx-ipuv3 2400000.ipu: disp1:    0x02648000
+[guest0/uart0] [    0.169373] imx-ipuv3 2400000.ipu: srm:      0x02740000
+[guest0/uart0] [    0.169374] imx-ipuv3 2400000.ipu: tpm:      0x02760000
+[guest0/uart0] [    0.169374] imx-ipuv3 2400000.ipu: dc:       0x02658000
+[guest0/uart0] [    0.169374] imx-ipuv3 2400000.ipu: ic:       0x02620000
+[guest0/uart0] [    0.169375] imx-ipuv3 2400000.ipu: dmfc:     0x02660000
+[guest0/uart0] [    0.169375] imx-ipuv3 2400000.ipu: vdi:      0x02668000
+[guest0/uart0] [    0.170016] imx-ipuv3 2400000.ipu: DI0 base: 0x02640000 remapped to b08e6000
+[guest0/uart0] [    0.170021] imx-ipuv3 2400000.ipu: DI1 base: 0x02648000 remapped to b08ee000
+[guest0/uart0] [    0.170053] imx-ipuv3 2400000.ipu: DC base:  0x02658000 template base: 0x02780000
+

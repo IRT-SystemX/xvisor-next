@@ -812,6 +812,38 @@ static const struct of_device_id imx_ldb_dt_ids[] = {
 	{ /* sentinel */ }
 };
 
+static int my_probe(struct vmm_device *dev,
+		     const struct vmm_devtree_nodeid *nodeid)
+{
+#if 0
+	struct clk *clk;
+	char const *const clocks[] = {
+		"di0_pll", "di1_pll",
+		"di0_sel", "di1_sel", "di2_sel", "di3_sel",
+		"di0", "di1"
+	};
+	const unsigned int clocks_count = array_size(clocks);
+	unsigned int i;
+	int rc;
+
+	vmm_lalert("==== PROBING LDB\n");
+
+	for (i = 0; i < clocks_count; ++i) {
+		clk = devm_clk_get(dev, clocks[i]);
+		if (!clk) {
+			vmm_lcritical("clk %s failed\n", clocks[i]);
+		} else {
+			rc = clk_prepare_enable(clk);
+			if (rc) {
+				vmm_lcritical("clk %s failed: %i\n", clocks[i], rc);
+			}
+		}
+	}
+#endif
+
+	return 0;
+}
+
 /*!
  * This function is called by the driver framework to initialize the LDB
  * device.
@@ -856,6 +888,10 @@ static int ldb_probe(struct vmm_device *dev,
 	dev_dbg(dev, "%s exit\n", __func__);
 	return ret;
 }
+static int my_remove(struct vmm_device *dev)
+{
+	return 0;
+}
 
 static int ldb_remove(struct vmm_device *dev)
 {
@@ -871,8 +907,10 @@ static int ldb_remove(struct vmm_device *dev)
 static struct vmm_driver mxcldb_driver = {
 	.name = "mxc_ldb",
 	.match_table = imx_ldb_dt_ids,
-	.probe = ldb_probe,
-	.remove = ldb_remove,
+	.probe = my_probe,
+	.remove = my_remove,
+//	.probe = ldb_probe,
+//	.remove = ldb_remove,
 #if 0
 	.suspend = ldb_suspend,
 	.resume = ldb_resume,

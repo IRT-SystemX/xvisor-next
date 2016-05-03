@@ -34,6 +34,7 @@
 #include <linux/types.h>
 #include <linux/clk-provider.h>
 #include <linux/mod_devicetable.h>
+#include <vmm_stdio.h>
 
 #include "ipu_param_mem.h"
 #include "ipu_regs.h"
@@ -3156,6 +3157,60 @@ static const struct dev_pm_ops ipu_pm_ops = {
 };
 #endif
 
+static vmm_irq_return_t _irq(int irq, void *data)
+{
+	vmm_lerror("################ IRQ %i\n", irq);
+	return VMM_IRQ_HANDLED;
+}
+
+static int my_probe(struct vmm_device *dev,
+		     const struct vmm_devtree_nodeid *nodeid)
+{
+	int rc = 0;
+#if 0
+	u32 irq_sync, irq_err;
+	struct clk *clk;
+
+	irq_sync = vmm_devtree_irq_parse_map(dev->of_node, 0);
+	irq_err = vmm_devtree_irq_parse_map(dev->of_node, 1);
+	vmm_lalert("==== PROBING IPU\n");
+
+	clk = devm_clk_get(dev, "bus");
+	if (!clk) {
+		vmm_lcritical("bus clk failed\n");
+	}
+	rc = clk_prepare_enable(clk);
+	if (rc) {
+		vmm_lcritical("bus clk enabled failed\n");
+	}
+
+	rc = vmm_host_irq_register(irq_sync, "ipu sync", _irq, NULL);
+	if (rc) {
+		vmm_lcritical("Failed irq sync\n");
+	}
+	rc = vmm_host_irq_register(irq_err, "ipu err", _irq, NULL);
+	if (rc) {
+		vmm_lcritical("Failed irq err\n");
+	}
+
+	clk = devm_clk_get(dev, "di0");
+	if (!clk) {
+		vmm_lcritical("di0 clk failed\n");
+	}
+	clk = devm_clk_get(dev, "di1");
+	if (!clk) {
+		vmm_lcritical("di1 clk failed\n");
+	}
+#endif
+	return rc;
+}
+
+int my_remove(struct vmm_device *dev)
+{
+	vmm_lalert("REMOVING IPU\n");
+	return 0;
+}
+
 /*!
  * This structure contains pointers to the power management callback functions.
  */
@@ -3163,10 +3218,12 @@ static struct vmm_driver mxcipu_driver = {
 	.name		= "imx-ipuv3",
 	.match_table	= imx_ipuv3_dt_ids,
 #ifdef CONFIG_PM
-	.pm	= &ipu_pm_ops,
+	//.pm	= &ipu_pm_ops,
 #endif
-	.probe		= ipu_probe,
-	.remove		= ipu_remove,
+	.probe = my_probe,
+	.remove = my_remove,
+//	.probe		= ipu_probe,
+//	.remove		= ipu_remove,
 };
 
 static int __init ipu_gen_init(void)

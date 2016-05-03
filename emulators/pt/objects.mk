@@ -23,3 +23,4 @@
 
 emulators-objs-$(CONFIG_EMU_PT_SIMPLE)+= pt/simple.o
 emulators-objs-$(CONFIG_EMU_PT_IMX6_GPC)+= pt/imx-gpc.o
+emulators-objs-$(CONFIG_EMU_PT_IPUV3H)+= pt/ipuv3h.o

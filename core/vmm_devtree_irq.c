@@ -224,8 +224,6 @@ static unsigned int vmm_devtree_irq_create_mapping(
 		return irq_data->args[0];
 	}
 
-	pr_debug("Domain %s found\n", domain->of_node->name);
-
 	/* Determine translation */
 	rc = vmm_host_irqdomain_xlate(domain, irq_data->args,
 				      irq_data->args_count, &hwirq, &type);

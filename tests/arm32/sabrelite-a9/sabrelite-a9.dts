@@ -46,7 +46,7 @@
 			interrupts = <41>;
 			host-interrupts = <9>;
 			memory-passthrough = <0x3>;
-			//debug = <0xffffffff>;
+			debug = <0xffffffff>;
 			device_type = "pt";
 			compatible = "simple";
 		};
@@ -61,7 +61,7 @@
 			memory-passthrough = <0x3>;
 			device_type = "pt";
 			compatible = "simple";
-			//debug = <0xffffffff>;
+			debug = <0xffffffff>;
 		};
 
 		gpu_vg {
@@ -113,6 +113,18 @@
 			device_type = "ram";
 		};
 
+		ipu2 {
+			manifest_type = "virtual";
+			address_type = "memory";
+			guest_physical_addr = <0x02800000>;
+			physical_size = <0x400000>;
+			interrupts = <39 40>;
+			host-interrupts = <7 8>;
+			device_type = "pt";
+			compatible = "ipuv3";
+			debug = <0xffff>;
+		};
+
 		ipu1 {
 			manifest_type = "virtual";
 			address_type = "memory";
@@ -120,24 +132,11 @@
 			physical_size = <0x400000>;
 			interrupts = <37 38>;
 			host-interrupts = <5 6>;
-			memory-passthrough = <0x3>;
 			device_type = "pt";
-			compatible = "simple";
-			///debug = <0xffff>;
+			compatible = "ipuv3";
+			debug = <0xffff>;
 		};
 
-		ipu2 {
-			manifest_type = "virtual";
-			address_type = "memory";
-			guest_physical_addr = <0x02800000>;
-			physical_size = <0x400000>;
-			interrupts = <39 40>;
-			memory-passthrough = <0x3>;
-			host-interrupts = <7 8>;
-			device_type = "pt";
-			compatible = "simple";
-			///debug = <0xffff>;
-		};
 
 		iomuxc {
 			manifest_type = "virtual";
@@ -149,11 +148,11 @@
 			memory-passthrough = <0x3>;
 			//device_type = "misc";
 			//compatible = "fsl,imx6q-iomuxc";
-			debug = <0xffff>;
+			debug = <0xffef>;
 			whitelist = <
 				0x004 0x00021000
 				0x008 0xffffffff /* LDB */
-				0x00C 0x600007ff
+				0x00C 0x7ffc07ff
 				0x010 0x000000ff
 				0x018 0xffffffff
 				0x01C 0xffffffff
@@ -515,9 +514,11 @@
 			address_type = "memory";
 			guest_physical_addr = <0x020c4000>;
 			physical_size = <0x4000>;
-			device_type = "misc";
-			compatible = "fsl,imx6q-ccm";
-		//	debug = <0xffff>;
+			device_type = "pt";
+			compatible = "simple";
+//			compatible = "fsl,imx6q-ccm";
+			debug = <0xffe7>;
+			//debug = <0xffff>;
 			whitelist = <
 				0x02C 0x00007e00
 				0x034 0x0003ffff
@@ -547,16 +548,18 @@
 			address_type = "memory";
 			guest_physical_addr = <0x020d8000>;
 			physical_size = <0x4000>;
-//			device_type = "misc";
-//			compatible = "zero";
+		//	device_type = "misc";
+		//	compatible = "zero";
 			//debug = <0xffff>;
 
+			interrupts = <123>;
+			host-interrupts = <123>;
 			debug = <0xffff>;
 			device_type = "pt";
 			compatible = "simple";
 			memory-passthrough = <0x3>;
 			whitelist = <
-				0x000 0x0000101e
+				0x000 0x000017ff
 				0x014 0x0000001f
 				0x018 0x0000001f
 			>;
@@ -580,26 +583,42 @@
 			interrupts = <121>;
 			host-interrupts = <121>;
 			device_type = "pt";
-			compatible = "imx6q-gpc";
-			//debug = <0xffffffff>;
-			/* CNTR Mask:
-			 *  - GPCIRQM
-			 *  - DVFS0CR
-			 *  - gpu_vpu_pup_req
-			 *  - gpu_vpu_pdn_req */
-			cntr-mask = <0x00210003>;
+			compatible = "simple";
+			memory-passthrough = <0x3>;
 
-			imr-masks = <0x00001fe8>, /* VPU, IPUs, GPU2D, GPU3D */
-				<0x00000000>,
-				<0x00000000>,
-				<0x00000000>;
+		//	compatible = "imx6q-gpc";
+			debug = <0xffef>;
+			whitelist = <
+				0x000 0x00210003
+/*				0x008 0x00001fe8 */
+				0x008 0xffffffff
+				0x00C 0xffffffff
+				0x010 0xffffffff
+				0x014 0xffffffff
+				0x018 0xffffffff
+				0x260 0x00000001 /* ?? */
 
-			//pgcr-mask = <0x00000001>; /* Power control */
-			pupscr-mask = <0x00003f3f>; /* All non-reserved fields */
-			pdnscr-mask = <0x00003f3f>; /* All non-reserved fields */
-			pgsr-mask = <0x00000001>; /* Power control status */
+				0x264 0x00003f3f
+				0x268 0x00003f3f
+				0x2A0 0x00000001
+			>;
+		//	/* CNTR Mask:
+		//	 *  - GPCIRQM
+		//	 *  - DVFS0CR
+		//	 *  - gpu_vpu_pup_req
+		//	 *  - gpu_vpu_pdn_req */
+		//	cntr-mask = <0x00210003>;
 
-			debug = <0xffff>;
+		//	imr-masks = <0x00001fe8>, /* VPU, IPUs, GPU2D, GPU3D */
+		//		<0x00000000>,
+		//		<0x00000000>,
+		//		<0x00000000>;
+
+		//	//pgcr-mask = <0x00000001>; /* Power control */
+		//	pupscr-mask = <0x00003f3f>; /* All non-reserved fields */
+		//	pdnscr-mask = <0x00003f3f>; /* All non-reserved fields */
+		//	pgsr-mask = <0x00000001>; /* Power control status */
+
 		};
 
 		gpt: gpt@02098000 {

@@ -66,6 +66,7 @@ static int __init imx6_early_init(struct vmm_devtree_node *node)
 static int __init imx6_final_init(struct vmm_devtree_node *node)
 {
 	int rc;
+	struct clk *clk;
 
 	imx_gpc_clocks_init();
 	imx6q_enet_phy_init();

@@ -83,8 +83,8 @@ static int apbh_emulator_read(struct vmm_emudev *edev,
 
 static int apbh_emulator_write(struct vmm_emudev *edev,
 				physical_addr_t offset,
-				u32 regval,
 				u32 mask,
+				u32 regval,
 				u32 size)
 {
 	struct apbh_state *s = edev->priv;

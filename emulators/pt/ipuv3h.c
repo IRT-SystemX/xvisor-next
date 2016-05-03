@@ -69,10 +69,10 @@ static const struct ipuv3_component comp[] = {
 	{ "dc_tmpl", 0x00380000, VMM_PAGE_SIZE },
 	{ "vdi",     0x00268000, VMM_PAGE_SIZE },
 };
-static const int comp_count = array_size(comp);
+#define COMP_COUNT array_size(comp)
 
 struct ipuv3_state {
-	virtual_addr_t		iomem[array_size(comp)];
+	virtual_addr_t		iomem[COMP_COUNT];
 	u32 irq_count;
 	u32 *host_irqs;
 	u32 *guest_irqs;
@@ -91,14 +91,14 @@ static int ipuv3_iomem_bank_get(const struct ipuv3_state *s,
 	const struct ipuv3_component *c;
 	bool found = FALSE;
 
-	for (i = 0; i < comp_count; i++) {
+	for (i = 0; i < COMP_COUNT; i++) {
 		c = &(comp[i]);
 		if ((offset >= c->offset) && (offset < c->offset + c->size)) {
 			found = TRUE;
 			break;
 		}
 	}
-	if (!found) {
+	if (unlikely(!found)) {
 		i = -1;
 	}
 
@@ -121,6 +121,7 @@ static int ipuv3_emulator_read(struct vmm_emudev *edev,
 		return VMM_OK;
 	}
 #endif
+
 	bank = ipuv3_iomem_bank_get(s, offset);
 	if (bank < 0) {
 		vmm_lcritical("%s: offset 0x%"PRIPADDR" is not mapped\n",
@@ -132,9 +133,7 @@ static int ipuv3_emulator_read(struct vmm_emudev *edev,
 	vmm_lnotice("%s: About to read at offset %"PRIPADDR" (bank %s). Addr: 0x%p\n",
 		    edev->node->name, offset, comp[bank].name, addr);
 	*dst = vmm_readl(addr);
-//	if (*dst != 0x0) {
-//		vmm_lalert("ipu read something that is not zero\n");
-//	}
+
         return VMM_OK;
 }
 
@@ -253,7 +252,7 @@ static int ipuv3_emulator_probe(struct vmm_guest *guest,
 	s->guest_irqs = NULL;
 	s->host_irqs = NULL;
 
-	for (i = 0; i < comp_count; i++) {
+	for (i = 0; i < COMP_COUNT; i++) {
 		const physical_addr_t pa = base + comp[i].offset;
 		const physical_size_t sz = comp[i].size;
 

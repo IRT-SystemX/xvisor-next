@@ -170,13 +170,13 @@ static void orphan_i2c_transfer(struct vmm_guest * guest, void *param){
 			if (vi2cdev->msg.flags & I2C_M_RD)
 			{
 				/* TODO: supprimer cette partie de test */
-				if(ret < 1)
-				{
-					vi2cdev->msg.len = 3;
-					vi2cdev->msg.buf[0] = 1;
-					vi2cdev->msg.buf[1] = 2;
-					vi2cdev->msg.buf[2] = 3;
-				}
+//				if(ret < 1)
+//				{
+//					vi2cdev->msg.len = 3;
+//					vi2cdev->msg.buf[0] = 1;
+//					vi2cdev->msg.buf[1] = 2;
+//					vi2cdev->msg.buf[2] = 3;
+//				}
 
 				DEBUG_PRINT("---- %s: Read\n", __func__);
 				/* WRITE LEN */
@@ -188,7 +188,7 @@ static void orphan_i2c_transfer(struct vmm_guest * guest, void *param){
 			/* print msgs recv */
 			print_msgs(__func__, &vi2cdev->msg, 1);
 
-			ret = 12;
+//			ret = 12;
 			/* WRITE RET */
 			len_write += virtio_buf_to_iovec_write(vdev, &vi2cdev->iov[4], 1, &ret, sizeof(ret));
 

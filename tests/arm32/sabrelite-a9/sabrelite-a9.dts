@@ -122,7 +122,9 @@
 			host-interrupts = <7 8>;
 			device_type = "pt";
 			compatible = "ipuv3";
-			debug = <0xffff>;
+			//compatible = "simple";
+			debug = <0xffe7>;
+			memory-passthrough = <0x3>;
 		};
 
 		ipu1 {
@@ -133,8 +135,11 @@
 			interrupts = <37 38>;
 			host-interrupts = <5 6>;
 			device_type = "pt";
+			//compatible = "simple";
 			compatible = "ipuv3";
+			//debug = <0xffe7>;
 			debug = <0xffff>;
+			memory-passthrough = <0x3>;
 		};
 
 
@@ -152,7 +157,8 @@
 			whitelist = <
 				0x004 0x00021000
 				0x008 0xffffffff /* LDB */
-				0x00C 0x7ffc07ff
+/*				0x00C 0x7ffc07ff */
+				0x00C 0x600007ff
 				0x010 0x000000ff
 				0x018 0xffffffff
 				0x01C 0xffffffff
@@ -239,6 +245,8 @@
 			physical_size = <0x2000>;
 			device_type = "misc";
 			compatible = "arm,a9mpcore";
+			// FIXME 
+			// pt =1
 			num_irq = <192>;
 			timer_irq = <29 30>;
 			parent_irq = <6>;
@@ -516,21 +524,29 @@
 			physical_size = <0x4000>;
 			device_type = "pt";
 			compatible = "simple";
+			memory-passthrough = <0x3>;
+//			device_type = "misc";
 //			compatible = "fsl,imx6q-ccm";
-			debug = <0xffe7>;
+			debug = <0xfffff7>;
 			//debug = <0xffff>;
 			whitelist = <
+				0x020 0xffffffff
+
 				0x02C 0x00007e00
 				0x034 0x0003ffff
 				0x038 0x0003ffff
-				0x074 0x0000ffff
-				0x060 0x01ff017f
+
+				0x074 0xc000ffff
 				0x06C 0x0f000000
-				0x080 0x0000c000
-				0x020 0x0c000000
+/*				0x080 0x0000c000*/
+
+/*				0x060 0x01ff017f*/
+
+/*				0x020 0x0c000000*/
 				0x018 0xff83c333
+
 				0x03C 0x0007fe00
-				0x088 0x00000c00
+				/*0x088 0x00000c00*/
 			>;
 		};
 

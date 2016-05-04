@@ -349,8 +349,8 @@ static int devemu_dowrite(struct vmm_emudev *edev,
 			break;
 		};
 		if (edev->emu->write32) {
-			debug_write(edev, offset, sizeof(u32), data32);
 			rc = edev->emu->write32(edev, offset, data32);
+			debug_write(edev, offset, sizeof(u32), data32);
 		} else {
 			vmm_printf("%s: edev=%s does not have write32()\n",
 				   __func__, edev->node->name);

@@ -3184,6 +3184,15 @@ static int my_probe(struct vmm_device *dev,
 		vmm_lcritical("bus clk enabled failed\n");
 	}
 
+	rc = vmm_host_irq_enable(irq_sync);
+	if (rc) {
+		vmm_lcritical("Failed enabling irq sync\n");
+	}
+	rc = vmm_host_irq_enable(irq_err);
+	if (rc) {
+		vmm_lcritical("Failed enabling irq err\n");
+	}
+
 	rc = vmm_host_irq_register(irq_sync, "ipu sync", _irq, NULL);
 	if (rc) {
 		vmm_lcritical("Failed irq sync\n");

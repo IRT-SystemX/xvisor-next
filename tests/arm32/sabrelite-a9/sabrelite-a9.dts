@@ -412,14 +412,37 @@
 		};
 
 		I2C0: virtio-i2c0 {
+		I2C0: virtio-i2c0@021a0000 {
 			manifest_type = "virtual";
 			address_type = "memory";
 			device_type = "virtio";
 			compatible = "virtio,mmio";
 			virtio_type = <65535>;
-			guest_physical_addr = <0x00129000>; /* In a "reserved" region */
-			physical_size = <0x1000>;
-			interrupts = <145>;
+			guest_physical_addr = <0x021a0000>;
+			physical_size = <0x4000>;
+			interrupts = <68>;
+		};
+
+		I2C1: virtio-i2c1@021a4000 {
+			manifest_type = "virtual";
+			address_type = "memory";
+			device_type = "virtio";
+			compatible = "virtio,mmio";
+			virtio_type = <65535>;
+			guest_physical_addr = <0x021a4000>;
+			physical_size = <0x4000>;
+			interrupts = <69>;
+		};
+
+		I2C2: virtio-i2c2@021a8000 {
+			manifest_type = "virtual";
+			address_type = "memory";
+			device_type = "virtio";
+			compatible = "virtio,mmio";
+			virtio_type = <65535>;
+			guest_physical_addr = <0x021a8000>;
+			physical_size = <0x4000>;
+			interrupts = <70>;
 		};
 
 		gpio1: gpio@0209c000 {

@@ -411,7 +411,6 @@
 			interrupts = <144>;
 		};
 
-		I2C0: virtio-i2c0 {
 		I2C0: virtio-i2c0@021a0000 {
 			manifest_type = "virtual";
 			address_type = "memory";

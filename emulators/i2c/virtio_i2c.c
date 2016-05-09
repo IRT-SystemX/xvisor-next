@@ -74,6 +74,7 @@ static void print_msgs(const char * func, struct i2c_msg *msgs, int num)
 
 static int i2cimx_attach_adapter(struct device *dev, void *dummy)
 {
+	const char *attr;
 	struct i2c_adapter *adap;
 	struct virtio_device *virtiodev;
 	struct virtio_i2c_dev *i2cdev;
@@ -88,21 +89,12 @@ static int i2cimx_attach_adapter(struct device *dev, void *dummy)
 	i2cdev = virtiodev->emu_data;
 
 	vmm_printf("---- %s: [%s] adapter %s is find \n",__func__, i2cdev->name, adap->name);
-//const char *strstr(const char *string, const char *substring)
-	if (	strcmp(adap->name, "i2c@021a0000") == 0 &&
-		strcmp(i2cdev->name, "guest0/virtio-i2c0@021c4000")==0) {
+	if (vmm_devtree_read_string(virtiodev->edev->node,
+				    "i2c_attach", &attr) == VMM_OK) {
+		if (strcmp(adap->name,attr)==0) {
 			i2cdev->adapter = adap;
 			vmm_printf("---- %s: adapter %s is set \n",__func__, adap->name);
 		}
-	else if (strcmp(adap->name, "i2c@021a4000") == 0 &&
-		strcmp(i2cdev->name, "guest0/virtio-i2c1@021c8000")==0) {
-		i2cdev->adapter = adap;
-		vmm_printf("---- %s: adapter %s is set \n",__func__, adap->name);
-	}
-	else if (strcmp(adap->name, "i2c@021a8000") == 0 &&
-		strcmp(i2cdev->name, "guest0/virtio-i2c2@021cc000")==0) {
-		i2cdev->adapter = adap;
-		vmm_printf("---- %s: adapter %s is set \n",__func__, adap->name);
 	}
 
 	return VMM_OK;

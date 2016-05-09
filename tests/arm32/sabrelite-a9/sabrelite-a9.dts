@@ -421,6 +421,7 @@
 			guest_physical_addr = <0x021a0000>;
 			physical_size = <0x4000>;
 			interrupts = <68>;
+			i2c_attach = "i2c@021a0000";
 		};
 
 		I2C1: virtio-i2c1@021a4000 {
@@ -432,6 +433,7 @@
 			guest_physical_addr = <0x021a4000>;
 			physical_size = <0x4000>;
 			interrupts = <69>;
+			i2c_attach = "i2c@021a4000";
 		};
 
 		I2C2: virtio-i2c2@021a8000 {
@@ -443,6 +445,7 @@
 			guest_physical_addr = <0x021a8000>;
 			physical_size = <0x4000>;
 			interrupts = <70>;
+			i2c_attach = "i2c@021a8000";
 		};
 
 		gpio1: gpio@0209c000 {

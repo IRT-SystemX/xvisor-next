@@ -52,5 +52,6 @@ void imx_gpc_gpu_power_off(void);
 void imx_gpc_clocks_init(void);
 void imx_gpc_write_reg(unsigned long offset, u32 reg);
 u32 imx_gpc_read_reg(unsigned long offset);
+void imx6_pm_common_init(struct vmm_devtree_node *node);
 
 #endif

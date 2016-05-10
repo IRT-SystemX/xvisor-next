@@ -159,6 +159,15 @@ static int gic_set_type(struct vmm_host_irq *d, u32 type)
 	bool enabled = FALSE;
 	u32 val;
 
+	vmm_lwarning("%s(%u, %u)"
+		     "enablemask=0x%"PRIx32", "
+		     "enableoff=0x%"PRIx32","
+		     "confmask=0x%"PRIx32","
+		     "confoff=0x%"PRIx32","
+		     "\n",
+		     __func__, d->hwirq, type,
+		     enablemask, enableoff, confmask, confoff);
+
 	/* Interrupt configuration for SGIs can't be changed */
 	if (d->hwirq < 16) {
 		return VMM_EINVALID;
@@ -180,14 +189,20 @@ static int gic_set_type(struct vmm_host_irq *d, u32 type)
 	 * As recommended by the spec, disable the interrupt before changing
 	 * the configuration
 	 */
-	if (gic_read(base + GIC_DIST_ENABLE_SET + enableoff) & enablemask) {
+	const u32 reg = gic_read(base + GIC_DIST_ENABLE_SET + enableoff);
+	if (reg & enablemask) {
 		gic_write(enablemask, base + GIC_DIST_ENABLE_CLEAR + enableoff);
 		enabled = TRUE;
 	}
+	vmm_lwarning("Enabled = %i. Read 0x%"PRIx32" at 0x%"PRIADDR". Wrote 0x%"PRIx32" at 0x%"PRIADDR"\n",
+		     enabled,
+		     reg, GIC_DIST_ENABLE_SET + enableoff,
+		     enablemask, GIC_DIST_ENABLE_CLEAR + enableoff);
 
 	gic_write(val, base + GIC_DIST_CONFIG + confoff);
 
 	if (enabled) {
+		vmm_lwarning("ENABLED\n");
 		gic_write(enablemask, base + GIC_DIST_ENABLE_SET + enableoff);
 	}
 

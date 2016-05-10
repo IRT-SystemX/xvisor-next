@@ -119,7 +119,8 @@
 			guest_physical_addr = <0x02800000>;
 			physical_size = <0x400000>;
 			interrupts = <39 40>;
-			host-interrupts = <7 8>;
+			//host-interrupts = <7 8>;
+//			host-interrupts = <39 40>;
 			device_type = "pt";
 			compatible = "ipuv3";
 			//compatible = "simple";
@@ -133,7 +134,8 @@
 			guest_physical_addr = <0x02400000>;
 			physical_size = <0x400000>;
 			interrupts = <37 38>;
-			host-interrupts = <5 6>;
+			//host-interrupts = <5 6>;
+//			host-interrupts = <37 38>;
 			device_type = "pt";
 			//compatible = "simple";
 			compatible = "ipuv3";
@@ -245,12 +247,9 @@
 			physical_size = <0x2000>;
 			device_type = "misc";
 			compatible = "arm,a9mpcore";
-			// FIXME 
-			// pt =1
 			num_irq = <192>;
 			timer_irq = <29 30>;
 			parent_irq = <6>;
-		//	debug = <0xffff>;
 		};
 
 		pwm1 {
@@ -274,6 +273,8 @@
 			physical_size = <0x4000>;
 			device_type = "misc";
 			compatible = "zero";
+			debug = <0xffff>;
+
 		};
 
 		pwm3 {
@@ -338,6 +339,7 @@
 			physical_size = <0x4000>;
 			device_type = "misc";
 			compatible = "zero";
+			debug = <0xffff>;
 		};
 
                 fec {
@@ -357,6 +359,7 @@
 			physical_size = <0x4000>;
 			device_type = "misc";
 			compatible = "zero";
+			debug = <0xffff>;
 		};
 
 		uart0 {
@@ -386,6 +389,7 @@
 			physical_size = <0x00004000>;
 			device_type = "misc";
 			compatible = "zero";
+			debug = <0xffff>;
 		};
 
 		//sdma {
@@ -476,6 +480,7 @@
 			physical_size = <0x00004000>;
 			device_type = "misc";
 			compatible = "zero";
+			debug = <0xfffff7>;
 		};
 
 		gpio3: gpio@020a4000 {
@@ -485,6 +490,7 @@
 			physical_size = <0x00004000>;
 			device_type = "misc";
 			compatible = "zero";
+			debug = <0xfffff7>;
 		};
 
 		gpio7: gpio@020b4000 {
@@ -494,6 +500,7 @@
 			physical_size = <0x00004000>;
 			device_type = "misc";
 			compatible = "zero";
+			debug = <0xfffff7>;
 		};
 
 		nor_flash0 {
@@ -515,6 +522,7 @@
 			compatible = "vexpress,a9";
 			mux_in_irq = <1200 1201>;
 			mux_out_irq = <1202>;
+			debug = <0xfffff7>;
 		};
 
 		ccm {
@@ -555,8 +563,19 @@
 			address_type = "memory";
 			guest_physical_addr = <0x020c8000>;
 			physical_size = <0x1000>;
-			device_type = "misc";
-			compatible = "fsl,imx6q-anatop";
+		//	device_type = "misc";
+		//	compatible = "fsl,imx6q-anatop";
+			debug = <0xffffff>;
+			device_type = "pt";
+			compatible = "simple";
+			memory-passthrough = <0x3>;
+
+			whitelist = <
+				0x0A0 0xffffffff
+				0x0B0 0xffffffff
+				0x0C0 0xffffffff
+				0x170 0xffffffff
+			>;
 		};
 
 		src {

@@ -59,6 +59,9 @@
 #define CGPR				0x64
 #define BM_CGPR_CHICKEN_BIT		(0x1 << 17)
 
+#define IOMUXC_GPR1			0x04
+#define IMX6Q_GPR1_GINT			(1 << 12)
+
 static void __iomem *ccm_base;
 
 int imx6q_set_lpm(enum mxc_cpu_pwr_mode mode)
@@ -77,6 +80,9 @@ int imx6q_set_lpm(enum mxc_cpu_pwr_mode mode)
 		break;
 	case STOP_POWER_ON:
 		val |= 0x2 << BP_CLPCR_LPM;
+		val &= ~BM_CLPCR_VSTBY;
+		val &= ~BM_CLPCR_SBYOS;
+		val |= BM_CLPCR_BYP_MMDC_CH1_LPM_HS;
 		break;
 	case WAIT_UNCLOCKED_POWER_OFF:
 		val |= 0x1 << BP_CLPCR_LPM;
@@ -88,23 +94,27 @@ int imx6q_set_lpm(enum mxc_cpu_pwr_mode mode)
 		val |= 0x3 << BP_CLPCR_STBY_COUNT;
 		val |= BM_CLPCR_VSTBY;
 		val |= BM_CLPCR_SBYOS;
-		if (cpu_is_imx6sl()) {
-			val |= BM_CLPCR_BYPASS_PMIC_READY;
-			val |= BM_CLPCR_BYP_MMDC_CH0_LPM_HS;
-		} else {
-			val |= BM_CLPCR_BYP_MMDC_CH1_LPM_HS;
-		}
+		val |= BM_CLPCR_BYP_MMDC_CH1_LPM_HS;
 		break;
 	default:
 		return -EINVAL;
 	}
 
 	/*
-	 * Unmask the always pending IOMUXC interrupt #32 as wakeup source to
-	 * deassert dsm_request signal, so that we can ensure dsm_request
-	 * is not asserted when we're going to write CLPCR register to set LPM.
-	 * After setting up LPM bits, we need to mask this wakeup source.
+	 * ERR007265: CCM: When improper low-power sequence is used,
+	 * the SoC enters low power mode before the ARM core executes WFI.
+	 *
+	 * Software workaround:
+	 * 1) Software should trigger IRQ #32 (IOMUX) to be always pending
+	 *    by setting IOMUX_GPR1_GINT.
+	 * 2) Software should then unmask IRQ #32 in GPC before setting CCM
+	 *    Low-Power mode.
+	 * 3) Software should mask IRQ #32 right after CCM Low-Power mode
+	 *    is set (set bits 0-1 of CCM_CLPCR).
+	 *
+	 * Note that IRQ #32 is GIC SPI #0.
 	 */
+
 	/* FIXME: This can be avoided as we already have the IRQ number */
 	iomuxc_irq_desc = vmm_host_irq_get(32);
 	mxc_gpc_irq_data.num = iomuxc_irq_desc->num;
@@ -118,4 +128,31 @@ int imx6q_set_lpm(enum mxc_cpu_pwr_mode mode)
 void __init imx6q_pm_set_ccm_base(void __iomem *base)
 {
 	ccm_base = base;
+}
+
+void __init imx6_pm_common_init(struct vmm_devtree_node *node)
+{
+	char const *const name = "fsl,imx6q-iomuxc";
+	virtual_addr_t addr;
+	int ret;
+	u32 val = 0x0;
+	void *off;
+
+	vmm_printf("HEY\n");
+
+	/*
+	 * This is for SW workaround step #1 of ERR007265, see comments
+	 * in imx6_set_lpm for details of this errata.
+	 * Force IOMUXC irq pending, so that the interrupt to GPC can be
+	 * used to deassert dsm_request signal when the signal gets
+	 * asserted unexpectedly.
+	 */
+
+//	addr = vmm_host_iomap(0x020e0000, VMM_PAGE_SIZE);
+//	vmm_printf("Regmap: 0x%"PRIADDR"\n", addr);
+//	off = (void *)(addr + IOMUXC_GPR1);
+//	val = vmm_readl(off);
+//	val |= IMX6Q_GPR1_GINT;
+//	vmm_writel(val, off);
+//	vmm_printf(" Wrote 0x%"PRIx32" at offset 0x%x\n",  val, IOMUXC_GPR1);
 }

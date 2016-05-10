@@ -3159,7 +3159,7 @@ static const struct dev_pm_ops ipu_pm_ops = {
 
 static vmm_irq_return_t _irq(int irq, void *data)
 {
-	vmm_lerror("################ IRQ %i\n", irq);
+	vmm_panic("IRQ %i was raised. My job is done!\n", irq);
 	return VMM_IRQ_HANDLED;
 }
 
@@ -3167,23 +3167,13 @@ static int my_probe(struct vmm_device *dev,
 		     const struct vmm_devtree_nodeid *nodeid)
 {
 	int rc = 0;
-#if 0
 	u32 irq_sync, irq_err;
-	struct clk *clk;
 
+
+	vmm_lalert("==== PROBING IPU\n");
+#if 0 
 	irq_sync = vmm_devtree_irq_parse_map(dev->of_node, 0);
 	irq_err = vmm_devtree_irq_parse_map(dev->of_node, 1);
-	vmm_lalert("==== PROBING IPU\n");
-
-	clk = devm_clk_get(dev, "bus");
-	if (!clk) {
-		vmm_lcritical("bus clk failed\n");
-	}
-	rc = clk_prepare_enable(clk);
-	if (rc) {
-		vmm_lcritical("bus clk enabled failed\n");
-	}
-
 	rc = vmm_host_irq_enable(irq_sync);
 	if (rc) {
 		vmm_lcritical("Failed enabling irq sync\n");
@@ -3201,7 +3191,18 @@ static int my_probe(struct vmm_device *dev,
 	if (rc) {
 		vmm_lcritical("Failed irq err\n");
 	}
+#endif
+#if 0
+	struct clk *clk;
 
+	clk = devm_clk_get(dev, "bus");
+	if (!clk) {
+		vmm_lcritical("bus clk failed\n");
+	}
+	rc = clk_prepare_enable(clk);
+	if (rc) {
+		vmm_lcritical("bus clk enabled failed\n");
+	}
 	clk = devm_clk_get(dev, "di0");
 	if (!clk) {
 		vmm_lcritical("di0 clk failed\n");
@@ -3211,6 +3212,8 @@ static int my_probe(struct vmm_device *dev,
 		vmm_lcritical("di1 clk failed\n");
 	}
 #endif
+
+
 	return rc;
 }
 

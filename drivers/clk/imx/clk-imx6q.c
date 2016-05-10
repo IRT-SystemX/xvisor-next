@@ -495,6 +495,8 @@ static void __init imx6q_clocks_init(struct device_node *ccm_node)
 	if (IS_ENABLED(CONFIG_PCI_IMX6))
 		clk_set_parent(clk[IMX6QDL_CLK_LVDS1_SEL], clk[IMX6QDL_CLK_SATA_REF_100M]);
 
+	vmm_printf("i.MX6: end clocks init\n");
+
 	/* Set initial power mode */
 	imx6q_set_lpm(WAIT_CLOCKED);
 }

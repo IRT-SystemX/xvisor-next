@@ -127,6 +127,32 @@
 			clocks = <&clks IMX6QDL_CLK_OCRAM>;
 		};
 
+		ipu1: ipu@02400000 {
+			compatible = "fsl,imx6q-ipu";
+			reg = <0x02400000 0x400000>;
+			interrupts = <GIC_SPI 6 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 5 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&clks IMX6QDL_CLK_IPU1>,
+				 <&clks IMX6QDL_CLK_IPU1_DI0>,
+				 <&clks IMX6QDL_CLK_IPU1_DI1>;
+			clock-names = "bus", "di0", "di1";
+			resets = <&src 2>;
+			bypass_reset = <0>;
+		};
+
+		ipu2: ipu@02800000 {
+			compatible = "fsl,imx6q-ipu";
+			reg = <0x02800000 0x400000>;
+			interrupts = <GIC_SPI 8 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&clks IMX6QDL_CLK_IPU2>,
+				 <&clks IMX6QDL_CLK_IPU2_DI0>,
+				 <&clks IMX6QDL_CLK_IPU2_DI1>;
+			clock-names = "bus", "di0", "di1";
+			resets = <&src 4>;
+			bypass_reset = <0>;
+		};
+
 		aips-bus@02000000 { /* AIPS1 */
 			compatible = "fsl,aips-bus", "simple-bus";
 			#address-cells = <1>;
@@ -220,6 +246,7 @@
 			iomuxc: iomuxc@020e0000 {
 				compatible = "fsl,imx6dl-iomuxc", "fsl,imx6q-iomuxc";
 				reg = <0x020e0000 0x4000>;
+				//interrupts = <GIC_SPI 0 IRQ_TYPE_LEVEL_HIGH>;
 
 				enet {
 					pinctrl_enet_1: enetgrp-1 {
@@ -800,32 +827,6 @@
 				timer_num = <2>;
 				interrupts = <GIC_SPI 55 IRQ_TYPE_LEVEL_HIGH>;
 			};
-		};
-
-		ipu1: ipu@02400000 {
-			compatible = "fsl,imx6q-ipu";
-			reg = <0x02400000 0x400000>;
-			interrupts = <GIC_SPI 6 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 5 IRQ_TYPE_LEVEL_HIGH>;
-			clocks = <&clks IMX6QDL_CLK_IPU1>,
-				 <&clks IMX6QDL_CLK_IPU1_DI0>,
-				 <&clks IMX6QDL_CLK_IPU1_DI1>;
-			clock-names = "bus", "di0", "di1";
-			resets = <&src 2>;
-			bypass_reset = <0>;
-		};
-
-		ipu2: ipu@02800000 {
-			compatible = "fsl,imx6q-ipu";
-			reg = <0x02800000 0x400000>;
-			interrupts = <GIC_SPI 8 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>;
-			clocks = <&clks IMX6QDL_CLK_IPU2>,
-				 <&clks IMX6QDL_CLK_IPU2_DI0>,
-				 <&clks IMX6QDL_CLK_IPU2_DI1>;
-			clock-names = "bus", "di0", "di1";
-			resets = <&src 4>;
-			bypass_reset = <0>;
 		};
 
 		mxcfb1: fb@0 {

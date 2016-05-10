@@ -59,6 +59,7 @@ static int __init imx6_early_init(struct vmm_devtree_node *node)
 			      imx_get_soc_revision());
 	imx_soc_device_init();
 	imx6q_init_irq();
+	imx6_pm_common_init(node);
 
 	return 0;
 }

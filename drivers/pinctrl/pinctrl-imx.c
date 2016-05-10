@@ -527,6 +527,7 @@ int imx_pinctrl_probe(struct vmm_device *dev,
 {
 	struct imx_pinctrl *ipctl;
 	int ret;
+	u32 val;
 
 	if (!info || !info->pins || !info->npins) {
 		dev_err(dev, "wrong pinctrl info\n");

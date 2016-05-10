@@ -330,7 +330,7 @@ static int simple_emulator_probe(struct vmm_guest *guest,
 		goto simple_emulator_probe_freestate_fail;
 	}
 
-#if 1
+#if 0
 	if (s->irq_count) {
 		s->host_irqs = vmm_zalloc(sizeof(u32) * s->irq_count);
 		if (!s->host_irqs) {

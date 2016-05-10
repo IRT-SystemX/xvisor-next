@@ -7,12 +7,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -34,9 +34,7 @@
 #include <vmm_devtree.h>
 #include <vmm_devemu.h>
 #include <vmm_devemu_debug.h>
-
-#define SZ_64K				0x00010000
-#define SZ_128K				0x00020000
+#include <asm/sizes.h>
 
 #define MODULE_DESC			"ipuv3 Pass-through Emulator"
 #define MODULE_AUTHOR			"Jean Guyomarc'h"
@@ -114,14 +112,6 @@ static int ipuv3_emulator_read(struct vmm_emudev *edev,
 	volatile void *addr;
 	int bank;
 
-
-#if 0
-	if (!strcmp(edev->node->name, "ipu2")) {
-		vmm_lerror("ipu2: ignoring read\n");
-		return VMM_OK;
-	}
-#endif
-
 	bank = ipuv3_iomem_bank_get(s, offset);
 	if (bank < 0) {
 		vmm_lcritical("%s: offset 0x%"PRIPADDR" is not mapped\n",
@@ -147,13 +137,6 @@ static int ipuv3_emulator_write(struct vmm_emudev *edev,
 	volatile void *addr;
 	int bank;
 
-#if 0
-	if (!strcmp(edev->node->name, "ipu2")) {
-		vmm_lerror("ipu2: ignoring write\n");
-		return VMM_OK;
-	}
-#endif
-
 	bank = ipuv3_iomem_bank_get(s, offset);
 	if (bank < 0) {
 		vmm_lcritical("%s: offset 0x%"PRIPADDR" is not mapped\n",
@@ -172,47 +155,54 @@ static vmm_irq_return_t simple_routed_irq(int irq, void *dev)
 {
 	int rc;
 
-	bool found = FALSE;
-	u32 i, host_irq = irq, guest_irq = 0;
 	struct vmm_emudev *edev = dev;
 	struct ipuv3_state *s = edev->priv;
 
 	//	if (vmm_devemu_debug_irq(edev)) {
-	vmm_lwarning("pt/: re-routing IRQ %i\n", irq);
+//	vmm_lwarning("pt/: re-routing IRQ %i\n", irq);
 	//	}
 
 	/* Find guest irq */
-	for (i = 0; i < s->irq_count; i++) {
-		if (s->host_irqs[i] == host_irq) {
-			guest_irq = s->guest_irqs[i];
-			found = TRUE;
-			break;
-		}
+//	static int yes = 0;
+//	if (!yes) {
+//		vmm_lemergency("%s() IRQ %u  ",
+//			       __func__, irq);
+//	}
+
+	rc = vmm_devemu_emulate_irq(s->guest, irq, 0);
+	if (rc) {
+		vmm_lerror("Failed to emulate IRQ \n");
 	}
-	if (!found) {
-		goto done;
+
+	rc = vmm_devemu_emulate_irq(s->guest, irq, 1);
+	if (rc) {
+		vmm_lerror("Failed to emulate IRQ \n");
 	}
+	vmm_printf("Irq %i handled\n", irq);
+//	vmm_printf("... yes\n");
+
+
+//	vmm_lerror("guest irq is %i\n", guest_irq);
 
 	/* Lower the interrupt level.
 	 * This will clear previous interrupt state.
 	 */
-	rc = vmm_devemu_emulate_irq(s->guest, guest_irq, 0);
-	if (rc) {
-		vmm_printf("%s: Emulate Guest=%s irq=%d level=0 failed\n",
-			   __func__, s->guest->name, guest_irq);
-	}
-
-	/* Elevate the interrupt level.
-	 * This will force interrupt triggering.
-	 */
-	rc = vmm_devemu_emulate_irq(s->guest, guest_irq, 1);
-	if (rc) {
-		vmm_printf("%s: Emulate Guest=%s irq=%d level=1 failed\n",
-			   __func__, s->guest->name, guest_irq);
-	}
-
-done:
-	return VMM_IRQ_HANDLED;
+//	rc = vmm_devemu_emulate_irq(s->guest, guest_irq, 0);
+//	if (rc) {
+//		vmm_printf("%s: Emulate Guest=%s irq=%d level=0 failed\n",
+//			   __func__, s->guest->name, guest_irq);
+//	}
+//
+//	/* Elevate the interrupt level.
+//	 * This will force interrupt triggering.
+//	 */
+//	rc = vmm_devemu_emulate_irq(s->guest, guest_irq, 1);
+//	if (rc) {
+//		vmm_printf("%s: Emulate Guest=%s irq=%d level=1 failed\n",
+//			   __func__, s->guest->name, guest_irq);
+//	}
+	//return VMM_IRQ_HANDLED;
+	return VMM_IRQ_NONE;
 }
 
 
@@ -221,11 +211,11 @@ static int ipuv3_emulator_reset(struct vmm_emudev *edev)
 	u32 i;
 	struct ipuv3_state *s = edev->priv;
 
-	for (i = 0; i < s->irq_count; i++) {
-		vmm_devemu_map_host2guest_irq(s->guest,
-					      s->guest_irqs[i],
-					      s->host_irqs[i]);
-	}
+//	for (i = 0; i < s->irq_count; i++) {
+//		vmm_devemu_map_host2guest_irq(s->guest,
+//					      s->guest_irqs[i],
+//					      s->host_irqs[i]);
+//	}
 
 	return VMM_OK;
 }
@@ -235,7 +225,7 @@ static int ipuv3_emulator_probe(struct vmm_guest *guest,
 				 const struct vmm_devtree_nodeid *eid)
 {
 
-	u32 i, irq_reg_count = 0;
+	u32 i, irq_count, irq;
 	int rc = VMM_OK;
 
 	struct ipuv3_state *s;
@@ -248,9 +238,12 @@ static int ipuv3_emulator_probe(struct vmm_guest *guest,
 	}
 
 	s->guest = guest;
-	s->irq_count = vmm_devtree_irq_count(edev->node);
-	s->guest_irqs = NULL;
-	s->host_irqs = NULL;
+	irq_count = vmm_devtree_irq_count(edev->node);
+	if (irq_count != 2) {
+		vmm_lerror("Two interrupts  are expected\n");
+		/* FIXME Dealloc */
+		return VMM_EFAIL;
+	}
 
 	for (i = 0; i < COMP_COUNT; i++) {
 		const physical_addr_t pa = base + comp[i].offset;
@@ -272,77 +265,27 @@ static int ipuv3_emulator_probe(struct vmm_guest *guest,
 			    (void *)(s->iomem[i]));
 	}
 
-	i = vmm_devtree_attrlen(edev->node, "host-interrupts") / sizeof(u32);
-	if (s->irq_count != i) {
-		rc = VMM_EINVALID;
-		return rc;
-	}
-
-#if 1
-	if (s->irq_count) {
-		s->host_irqs = vmm_zalloc(sizeof(u32) * s->irq_count);
-		if (!s->host_irqs) {
-			rc = VMM_ENOMEM;
-			return rc;
-		}
-
-		s->guest_irqs = vmm_zalloc(sizeof(u32) * s->irq_count);
-		if (!s->guest_irqs) {
-			rc = VMM_ENOMEM;
-			return rc;
-		}
-	}
-
-	for (i = 0; i < s->irq_count; i++) {
-		rc = vmm_devtree_read_u32_atindex(edev->node,
-						  "host-interrupts",
-						  &s->host_irqs[i], i);
+	for (i = 0; i < irq_count; i++) {
+		rc = vmm_devtree_irq_get(edev->node, &irq, i);
 		if (rc) {
-		return VMM_EFAIL;	
+			vmm_lerror("Failed to retrieve irq #%"PRIu32"\n", i);
+			/* FIXME Dealloc */
+			return VMM_EFAIL;
 		}
-
-		rc = vmm_devtree_irq_get(edev->node, &s->guest_irqs[i], i);
+		rc = vmm_host_irq_mark_routed(irq);
 		if (rc) {
-		return VMM_EFAIL;	
+			vmm_lerror("Failed to mark irq %"PRIu32" as routed\n", irq);
+			/* FIXME Dealloc */
+			return VMM_EFAIL;
 		}
-
-		vmm_printf(" binding guest IRQ %"PRIu32" to host IRQ %"PRIu32"\n",
-			   s->guest_irqs[i], s->host_irqs[i]);
-
-		//    vmm_host_irq_enable(s->host_irqs[i]);
-
-		//		rc = vmm_host_irq_mark_routed(s->host_irqs[i]);
-		//		if (rc) {
-		//			goto simple_emulator_probe_cleanupirqs_fail;
-		//		}
-
-		struct vmm_host_irqdomain *dom = vmm_host_irqdomain_get(s->guest_irqs[i]);
-		const u32 tab[3] = { 0x0, s->host_irqs[i], 0x4 };
-		unsigned int type;
-		unsigned long hwirq;
-
-		rc = vmm_host_irqdomain_xlate(dom, tab, 3, &hwirq, &type);
-		if (rc) {
-			vmm_lalert("Fail to xlate\n");
-		}
-		vmm_lwarning("hwirq = %lu\n", hwirq);
-		rc = vmm_host_irqdomain_create_mapping(dom, hwirq);
-		if (rc < 0) {
-			vmm_lalert("Fail to create mappping (%i)\n", rc);
-		}
-		u32 hirq = rc;
-		vmm_host_irq_set_type(hirq, type);
-
-		rc = vmm_host_irq_register(hirq, edev->node->name,
+		rc = vmm_host_irq_register(irq, edev->node->name,
 					   simple_routed_irq, edev);
 		if (rc) {
-			//			vmm_host_irq_unmark_routed(s->host_irqs[i]);
-		return VMM_EFAIL;	
+			vmm_lerror("Failed to register irq %"PRIu32"\n", irq);
+			/* FIXME Dealloc */
+			return VMM_EFAIL;
 		}
-
-		irq_reg_count++;
 	}
-#endif
 	edev->priv = s;
 
 	return rc;

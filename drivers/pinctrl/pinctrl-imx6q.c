@@ -488,9 +488,27 @@ static struct of_device_id imx6q_pinctrl_of_match[] = {
 	{ /* sentinel */ }
 };
 
+static vmm_irq_return_t _irq(int irq, void *data)
+{
+	return VMM_IRQ_HANDLED;
+}
+
 static int imx6q_pinctrl_probe(struct vmm_device *dev,
 			       const struct vmm_devtree_nodeid *devid)
 {
+	//u32 irq;
+	//int rc;
+
+	//irq = vmm_devtree_irq_parse_map(dev->of_node, 0);
+	//vmm_lwarning("imuxc irq > %"PRIu32"\n", irq);
+	//rc = vmm_host_irq_enable(irq);
+	//if (rc) {
+	//	vmm_lcritical("Fail enabling irq iomuxc\n");
+	//}
+	//rc = vmm_host_irq_register(irq, "iomuxc", _irq, NULL);
+	//if (rc) {
+	//	vmm_lcritical("Fail registering irq\n");
+	//}
 	return imx_pinctrl_probe(dev, &imx6q_pinctrl_info);
 }
 

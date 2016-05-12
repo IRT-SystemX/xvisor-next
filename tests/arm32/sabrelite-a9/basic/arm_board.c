@@ -64,7 +64,7 @@ u32 arm_board_linux_machine_type(void)
 void arm_board_linux_default_cmdline(char *cmdline, u32 cmdline_sz)
 {
 	arm_strcpy(cmdline,
-		   "root=/dev/ram rw earlyprintk "
+		   "root=/dev/vda rw earlyprintk "
 		   "enable_wait_mode=off "
 		   "video=mxcfb0:dev=ldb,LDB-XGA,if=RGB666 "
 		   "video=mxcfb1:off "

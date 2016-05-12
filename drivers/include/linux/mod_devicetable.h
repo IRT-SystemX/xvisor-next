@@ -312,7 +312,7 @@ struct bcma_device_id {
 #define BCMA_ANY_CLASS		0xFF
 
 /* Already define in virtio.h */
-#ifndef __VIRTIO_H__
+#if 0
 struct virtio_device_id {
 	__u32 device;
 	__u32 vendor;

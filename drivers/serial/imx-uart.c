@@ -124,6 +124,15 @@ void imx_lowlevel_init(virtual_addr_t base, u32 baudrate, u32 input_clock)
 	unsigned int temp = vmm_readl((void *)(base + UCR1));
 	unsigned int divider;
 
+#ifdef CONFIG_DEFTERM_EARLY_IMX
+	/* The already enabled uart should be the one used for early prints */
+	if (temp & UCR1_UARTEN) {
+		while (!(vmm_readl((void *)(base + IMX21_UTS)) & UTS_TXEMPTY)) ;
+		/* Wait for the TX to be totally complete */
+		while (!(vmm_readl((void *)(base + USR2)) & USR2_TXDC));
+	}
+	temp = vmm_readl((void *)(base + UCR1));
+#endif
 	/* First, disable everything */
 	temp &= ~UCR1_UARTEN;
 	vmm_writel(temp, (void *)base + UCR1);

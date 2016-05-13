@@ -33,6 +33,14 @@
 #include <emu/virtio_i2c.h>
 #include <linux/i2c.h>
 
+#undef DEBUG
+
+#ifdef DEBUG
+#define DPRINTF(msg...)			vmm_printf(msg)
+#else
+#define DPRINTF(msg...)
+#endif
+
 #define MODULE_DESC			"VirtIO i2c Emulator"
 #define MODULE_AUTHOR			"Mickaël Tansorier"
 #define MODULE_LICENSE			"GPL"
@@ -157,7 +165,7 @@ static void orphan_i2c_transfer(struct vmm_guest * guest, void *param){
 			/* i2c transfer */
 			ret = i2c_transfer(vi2cdev->adapter, &vi2cdev->msg, 1);
 			if (ret < 1)
-				vmm_printf("virtio i2c: call i2c transfert \
+				DPRINTF("virtio i2c: call i2c transfert \
 fail with error %d\n", ret);
 
 			len_write += set_msg_buf(vi2cdev, ret);

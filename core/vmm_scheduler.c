@@ -444,11 +444,13 @@ int vmm_scheduler_state_change(struct vmm_vcpu *vcpu, u32 new_state)
 	case VMM_VCPU_STATE_HALTED:
 		if ((current_state == VMM_VCPU_STATE_READY) ||
 		    (current_state == VMM_VCPU_STATE_RUNNING)) {
-			vcpu->resumed = FALSE;
 			if (vcpu->resumed &&
 			    (new_state == VMM_VCPU_STATE_PAUSED)) {
+				vcpu->resumed = FALSE;
 				goto skip_state_change;
-			} else if (schedp->current_vcpu == vcpu) {
+			}
+			vcpu->resumed = FALSE;
+			if (schedp->current_vcpu == vcpu) {
 				/* Preempt current VCPU if paused or halted */
 				preempt = TRUE;
 			} else if (current_state == VMM_VCPU_STATE_READY) {

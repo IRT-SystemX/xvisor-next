@@ -226,7 +226,7 @@ static int vmm_stdio_write(struct vmm_chardev *cdev, char ch, int block)
 	return VMM_OK;
 }
 
-static int vmm_printchars(struct vmm_chardev *cdev, char ch, bool block)
+static int vmm_printchar(struct vmm_chardev *cdev, char ch, bool block)
 {
 	int rc = VMM_OK;
 
@@ -235,7 +235,8 @@ static int vmm_printchars(struct vmm_chardev *cdev, char ch, bool block)
 	}
 
 	if (!stdio_init_done) {
-		return arch_defterm_putc((u8)ch);
+		arch_defterm_early_putc((u8)ch);
+		return VMM_OK;
 	}
 
 	if (cdev && (stdio_ctrl.dev != cdev)) {
@@ -247,7 +248,12 @@ static int vmm_printchars(struct vmm_chardev *cdev, char ch, bool block)
 		}
 	}
 
-	rc = vmm_stdio_write(cdev, ch, block);
+	if ((NULL == cdev) && (arch_smp_id() == 0)) {
+		while ((rc = arch_defterm_putc((u8)ch)) && block);
+	} else {
+
+		rc = vmm_stdio_write(cdev, ch, block);
+	}
 
 	return rc;
 }
@@ -259,15 +265,15 @@ void vmm_cputc(struct vmm_chardev *cdev, char ch)
 		u32 size;
 		char proc[8];
 
-		vmm_printchars(cdev, '\r', TRUE);
+		vmm_printchar(cdev, '\r', TRUE);
 		size = vmm_snprintf(proc, sizeof (proc) - 1, "\n#%d ",
 				    arch_smp_id());
 		for (i = 0; i < size; ++i) {
-			vmm_printchars(cdev, proc[i], TRUE);
+			vmm_printchar(cdev, proc[i], TRUE);
 		}
 		return;
 	}
-	vmm_printchars(cdev, ch, TRUE);
+	vmm_printchar(cdev, ch, TRUE);
 }
 
 void vmm_putc(char ch)

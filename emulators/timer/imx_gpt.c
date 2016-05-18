@@ -273,7 +273,7 @@ static int imx_gpt_emulator_write(struct vmm_emudev *edev,
 
 	case GPT_IR:
 		if (regval & GPT_IR_ROVIE) {
-			vmm_lwarning("Rollover interrupt not supported\n");
+			vmm_lwarning("imx-gpt", "Rollover interrupt not supported\n");
 		}
 		gpt->irq_ena = regval & GPT_IR_MASK;
 		break;

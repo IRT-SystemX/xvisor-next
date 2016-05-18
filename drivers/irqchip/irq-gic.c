@@ -159,14 +159,14 @@ static int gic_set_type(struct vmm_host_irq *d, u32 type)
 	bool enabled = FALSE;
 	u32 val;
 
-	vmm_lwarning("%s(%u, %u)"
-		     "enablemask=0x%"PRIx32", "
-		     "enableoff=0x%"PRIx32","
-		     "confmask=0x%"PRIx32","
-		     "confoff=0x%"PRIx32","
-		     "\n",
-		     __func__, d->hwirq, type,
-		     enablemask, enableoff, confmask, confoff);
+//	vmm_lwarning("%s(%u, %u)"
+//		     "enablemask=0x%"PRIx32", "
+//		     "enableoff=0x%"PRIx32","
+//		     "confmask=0x%"PRIx32","
+//		     "confoff=0x%"PRIx32","
+//		     "\n",
+//		     __func__, d->hwirq, type,
+//		     enablemask, enableoff, confmask, confoff);
 
 	/* Interrupt configuration for SGIs can't be changed */
 	if (d->hwirq < 16) {
@@ -194,15 +194,15 @@ static int gic_set_type(struct vmm_host_irq *d, u32 type)
 		gic_write(enablemask, base + GIC_DIST_ENABLE_CLEAR + enableoff);
 		enabled = TRUE;
 	}
-	vmm_lwarning("Enabled = %i. Read 0x%"PRIx32" at 0x%"PRIADDR". Wrote 0x%"PRIx32" at 0x%"PRIADDR"\n",
-		     enabled,
-		     reg, GIC_DIST_ENABLE_SET + enableoff,
-		     enablemask, GIC_DIST_ENABLE_CLEAR + enableoff);
-
+//	vmm_lwarning("Enabled = %i. Read 0x%"PRIx32" at 0x%"PRIADDR". Wrote 0x%"PRIx32" at 0x%"PRIADDR"\n",
+//		     enabled,
+//		     reg, GIC_DIST_ENABLE_SET + enableoff,
+//		     enablemask, GIC_DIST_ENABLE_CLEAR + enableoff);
+//
 	gic_write(val, base + GIC_DIST_CONFIG + confoff);
 
 	if (enabled) {
-		vmm_lwarning("ENABLED\n");
+		//vmm_lwarning("ENABLED\n");
 		gic_write(enablemask, base + GIC_DIST_ENABLE_SET + enableoff);
 	}
 
@@ -302,6 +302,18 @@ static vmm_irq_return_t gic_handle_cascade_irq(int irq, void *dev)
 	return VMM_IRQ_HANDLED;
 }
 
+//static void gic_enable_irq(struct vmm_host_irq *irq)
+//{
+//	struct gic_chip_data *gic = vmm_host_irq_get_chip_data(d);
+//	gic_write(d->
+//	gic_unmask_irq(irq);
+//}
+//
+//static void gic_disable_irq(struct vmm_host_irq *irq)
+//{
+//	gic_mask_irq(irq);
+//}
+
 static struct vmm_host_irq_chip gic_chip = {
 	.name			= "GIC",
 	.irq_mask		= gic_mask_irq,
@@ -312,6 +324,8 @@ static struct vmm_host_irq_chip gic_chip = {
 	.irq_set_affinity	= gic_set_affinity,
 	.irq_raise		= gic_raise,
 #endif
+//	.irq_enable		= gic_enable_irq,
+//	.irq_disable		= gic_disable_irq,
 	.irq_get_routed_state	= gic_irq_get_routed_state,
 	.irq_set_routed_state	= gic_irq_set_routed_state,
 };

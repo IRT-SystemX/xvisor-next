@@ -202,29 +202,16 @@ static vmm_irq_return_t simple_routed_irq(int irq, void *dev)
 	struct vmm_emudev *edev = dev;
 	struct simple_state *s = edev->priv;
 
-	//	if (vmm_devemu_debug_irq(edev)) {
-	vmm_lwarning("pt/%s: re-routing IRQ %i\n", s->name, irq);
-	//	}
-
-	/* Find guest irq */
-	for (i = 0; i < s->irq_count; i++) {
-		if (s->host_irqs[i] == host_irq) {
-			guest_irq = s->guest_irqs[i];
-			found = TRUE;
-			break;
-		}
-	}
-	if (!found) {
-		goto done;
-	}
+	vmm_host_irq_mask(irq);
+	vmm_lcritical("(pt/simple) mask %i\n", irq);
 
 	/* Lower the interrupt level.
 	 * This will clear previous interrupt state.
 	 */
-	rc = vmm_devemu_emulate_irq(s->guest, guest_irq, 0);
+	rc = vmm_devemu_emulate_irq(s->guest, irq, 0);
 	if (rc) {
-		vmm_printf("%s: Emulate Guest=%s irq=%d level=0 failed\n",
-			   __func__, s->guest->name, guest_irq);
+		vmm_lerror("Failed to emulate IRQ \n");
+		goto err;
 	}
 
 	/* Elevate the interrupt level.
@@ -232,11 +219,14 @@ static vmm_irq_return_t simple_routed_irq(int irq, void *dev)
 	 */
 	rc = vmm_devemu_emulate_irq(s->guest, guest_irq, 1);
 	if (rc) {
-		vmm_printf("%s: Emulate Guest=%s irq=%d level=1 failed\n",
-			   __func__, s->guest->name, guest_irq);
+		vmm_lerror("Failed to emulate IRQ \n");
+		goto err;
 	}
 
 done:
+	return VMM_IRQ_HANDLED;
+err:
+	vmm_host_irq_unmask(irq);
 	return VMM_IRQ_HANDLED;
 }
 
@@ -245,11 +235,13 @@ static int simple_emulator_reset(struct vmm_emudev *edev)
 	u32 i;
 	struct simple_state *s = edev->priv;
 
+#if 0
 	for (i = 0; i < s->irq_count; i++) {
 		vmm_devemu_map_host2guest_irq(s->guest,
 					      s->guest_irqs[i],
 					      s->host_irqs[i]);
 	}
+#endif
 
 	return VMM_OK;
 }
@@ -324,13 +316,15 @@ static int simple_emulator_probe(struct vmm_guest *guest,
 //		}
 	}
 
+
+#if 0
+
 	i = vmm_devtree_attrlen(edev->node, "host-interrupts") / sizeof(u32);
 	if (s->irq_count != i) {
 		rc = VMM_EINVALID;
 		goto simple_emulator_probe_freestate_fail;
 	}
 
-#if 0
 	if (s->irq_count) {
 		s->host_irqs = vmm_zalloc(sizeof(u32) * s->irq_count);
 		if (!s->host_irqs) {
@@ -395,6 +389,35 @@ static int simple_emulator_probe(struct vmm_guest *guest,
 		irq_reg_count++;
 	}
 #endif
+
+#if 1
+
+	u32 irq;
+	for (i = 0; i < s->irq_count; i++) {
+		rc = vmm_devtree_irq_get(edev->node, &irq, i);
+		if (rc) {
+			vmm_lerror("Failed to retrieve irq #%"PRIu32"\n", i);
+			/* FIXME Dealloc */
+			return VMM_EFAIL;
+		}
+		rc = vmm_host_irq_mark_routed(irq);
+		if (rc) {
+			vmm_lerror("Failed to mark irq %"PRIu32" as routed\n", irq);
+			/* FIXME Dealloc */
+			return VMM_EFAIL;
+		}
+		rc = vmm_host_irq_register(irq, edev->node->name,
+					   simple_routed_irq, edev);
+		if (rc) {
+			vmm_lerror("Failed to register irq %"PRIu32"\n", irq);
+			/* FIXME Dealloc */
+			return VMM_EFAIL;
+		}
+
+		vmm_lalert("IRQ %u enabled\n", irq);
+	}
+#endif
+
 
 	vmm_printf("%s: simple/pt. Memory flags: 0x%"PRIx32"\n",
 		   s->name, s->memory_pt);

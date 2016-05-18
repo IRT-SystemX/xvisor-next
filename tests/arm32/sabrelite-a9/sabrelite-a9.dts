@@ -113,12 +113,27 @@
 			device_type = "ram";
 		};
 
+		ipu1 {
+			manifest_type = "virtual";
+			address_type = "memory";
+			guest_physical_addr = <0x02400000>;
+			physical_size = <0x400000>;
+			interrupts = <38 37>;
+			//host-interrupts = <5 6>;
+//			host-interrupts = <37 38>;
+			device_type = "pt";
+			//compatible = "simple";
+			compatible = "ipuv3";
+	debug = <0xffe7>;
+//			debug = <0xffff>;
+			memory-passthrough = <0x3>;
+		};
 		ipu2 {
 			manifest_type = "virtual";
 			address_type = "memory";
 			guest_physical_addr = <0x02800000>;
 			physical_size = <0x400000>;
-			interrupts = <39 40>;
+			interrupts = <40 39>;
 			//host-interrupts = <7 8>;
 //			host-interrupts = <39 40>;
 			device_type = "pt";
@@ -128,21 +143,7 @@
 			memory-passthrough = <0x3>;
 		};
 
-		ipu1 {
-			manifest_type = "virtual";
-			address_type = "memory";
-			guest_physical_addr = <0x02400000>;
-			physical_size = <0x400000>;
-			interrupts = <37 38>;
-			//host-interrupts = <5 6>;
-//			host-interrupts = <37 38>;
-			device_type = "pt";
-			//compatible = "simple";
-			compatible = "ipuv3";
-			//debug = <0xffe7>;
-			debug = <0xffff>;
-			memory-passthrough = <0x3>;
-		};
+
 
 
 		iomuxc {
@@ -155,7 +156,7 @@
 			memory-passthrough = <0x3>;
 			//device_type = "misc";
 			//compatible = "fsl,imx6q-iomuxc";
-			debug = <0xffef>;
+//			debug = <0xffef>;
 			whitelist = <
 				0x004 0x00021000
 				0x008 0xffffffff /* LDB */
@@ -535,7 +536,7 @@
 			memory-passthrough = <0x3>;
 //			device_type = "misc";
 //			compatible = "fsl,imx6q-ccm";
-			debug = <0xfffff7>;
+		//	debug = <0xfffff7>;
 			//debug = <0xffff>;
 			whitelist = <
 				0x020 0xffffffff
@@ -565,7 +566,7 @@
 			physical_size = <0x1000>;
 		//	device_type = "misc";
 		//	compatible = "fsl,imx6q-anatop";
-			debug = <0xffffff>;
+	//		debug = <0xffffff>;
 			device_type = "pt";
 			compatible = "simple";
 			memory-passthrough = <0x3>;
@@ -587,8 +588,8 @@
 		//	compatible = "zero";
 			//debug = <0xffff>;
 
-			interrupts = <123>;
-			host-interrupts = <123>;
+//			interrupts = <123>;
+//			host-interrupts = <123>;
 			debug = <0xffff>;
 			device_type = "pt";
 			compatible = "simple";
@@ -615,14 +616,14 @@
 			address_type = "memory";
 			guest_physical_addr = <0x020dc000>;
 			physical_size = <0x4000>;
-			interrupts = <121>;
-			host-interrupts = <121>;
+//			interrupts = <121>;
+//			host-interrupts = <121>;
 			device_type = "pt";
 			compatible = "simple";
 			memory-passthrough = <0x3>;
 
 		//	compatible = "imx6q-gpc";
-			debug = <0xffef>;
+		//	debug = <0xffef>;
 			whitelist = <
 				0x000 0x00210003
 /*				0x008 0x00001fe8 */

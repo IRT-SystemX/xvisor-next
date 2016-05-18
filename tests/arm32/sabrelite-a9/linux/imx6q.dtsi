@@ -161,7 +161,14 @@
 			#size-cells = <0>;
 			compatible = "fsl,imx6q-ipu";
 			reg = <0x02800000 0x400000>;
-			interrupts = <0 8 0x4 0 7 0x4>;
+			interrupts = <
+				0 8 0x4
+				0 7 0x4
+				0 110 0x4
+				0 111 0x4
+				0 124 0x4
+				0 125 0x4
+			>;
 			clocks = <&clks IMX6QDL_CLK_IPU2>,
 				 <&clks IMX6QDL_CLK_IPU2_DI0>,
 				 <&clks IMX6QDL_CLK_IPU2_DI1>;

@@ -552,6 +552,7 @@ int __vmm_devemu_emulate_irq(struct vmm_guest *guest,
 	}
 
 	list_for_each_entry(gi, &eg->g_irq[irq], head) {
+//		vmm_lalert("Emulating IRQ %"PRIu32". Level %i\n", irq, level);
 		gi->chip->handle(irq, cpu, level, gi->opaque);
 	}
 

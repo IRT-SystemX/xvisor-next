@@ -272,6 +272,8 @@ static int cmd_vserial_bind(struct vmm_chardev *cdev, const char *name)
 						break;
 					}
 					switch (ecmd[1]) {
+					case 'r':
+						goto send_break;
 					case 'q':
 						goto send_break;
 					default:

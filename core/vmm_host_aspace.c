@@ -357,8 +357,6 @@ static int host_memunmap(virtual_addr_t va, virtual_size_t sz)
 	sz = VMM_ROUNDUP2_PAGE_SIZE(sz);
 	va &= ~VMM_PAGE_MASK;
 
-	vmm_lerror("UNMAPPING VA %"PRIADDR"\n", va);
-
 	if ((rc = arch_cpu_aspace_va2pa(va, &pa))) {
 		return rc;
 	}

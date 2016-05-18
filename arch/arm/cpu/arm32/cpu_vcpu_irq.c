@@ -21,6 +21,7 @@
  * @brief source code for handling vcpu interrupts
  */
 
+#include <vmm_stdio.h>
 #include <vmm_error.h>
 #include <vmm_vcpu_irq.h>
 #include <arch_cpu.h>
@@ -28,6 +29,9 @@
 #include <cpu_vcpu_helper.h>
 #include <cpu_defines.h>
 #include <arm_features.h>
+
+#define DBG
+#undef DBG
 
 u32 arch_vcpu_irq_count(struct vmm_vcpu *vcpu)
 {
@@ -81,6 +85,9 @@ int arch_vcpu_irq_execute(struct vmm_vcpu *vcpu,
 {
 	u32 old_cpsr, new_cpsr, new_mode, new_flags, lr_off;
 	virtual_addr_t new_pc;
+#ifdef DBG
+	vmm_lwarning("in %s() for irq %"PRIu32"\n", __func__, irq_no);
+#endif
 
 	old_cpsr = cpu_vcpu_cpsr_retrieve(vcpu, regs);
 	new_cpsr = old_cpsr;
@@ -124,6 +131,9 @@ int arch_vcpu_irq_execute(struct vmm_vcpu *vcpu,
 		lr_off = 0;
 		break;
 	case CPU_EXTERNAL_IRQ:
+#ifdef DBG
+		vmm_lwarning("old_cpsr = 0x%"PRIx32"\n", old_cpsr);
+#endif
 		if (old_cpsr & CPSR_IRQ_DISABLED) {
 			return VMM_EFAIL;
 		}
@@ -158,6 +168,9 @@ int arch_vcpu_irq_execute(struct vmm_vcpu *vcpu,
 			new_cpsr &= ~CPSR_THUMB_ENABLED;
 		}
 	}
+#ifdef DBG
+	vmm_lwarning("new pc = 0x%"PRIADDR"\n", new_pc);
+#endif
 	cpu_vcpu_cpsr_update(vcpu, regs, new_cpsr, CPSR_ALLBITS_MASK);
 	cpu_vcpu_spsr_update(vcpu, old_cpsr, CPSR_ALLBITS_MASK);
 	regs->lr = regs->pc + lr_off;

@@ -34,11 +34,16 @@
 #include <vmm_heap.h>
 #include <vmm_modules.h>
 #include <vmm_manager.h>
+#include <vmm_stdio.h>
 #include <vmm_scheduler.h>
 #include <vmm_vcpu_irq.h>
 #include <vmm_devemu.h>
 #include <libs/stringlib.h>
+#include <vmm_host_irq.h>
 #include <emu/gic_emulator.h>
+#include <vmm_host_aspace.h>
+
+#include <emu/ipuv3h.h>
 
 #define MODULE_DESC			"GICv2 Emulator"
 #define MODULE_AUTHOR			"Anup Patel"
@@ -49,6 +54,8 @@
 
 #define GIC_MAX_NCPU			8
 #define GIC_MAX_NIRQ			256
+
+#define DBG 0
 
 struct memory_region {
 	u32 offset;
@@ -220,9 +227,19 @@ static void gic_irq_handle(u32 irq, int cpu, int level, void *opaque)
 		target = GIC_TARGET(s, irq);
 	}	
 
+#if DBG
+	if (irq == 38) {
+		vmm_lerror("%s(%"PRIu32"):%i: entering. cm=%i\n", __func__, irq, __LINE__, cm);
+	}
+#endif
 	vmm_write_lock_irqsave(&s->dist_lock, flags);
 
 	if (level == GIC_TEST_LEVEL(s, irq, cm)) {
+#if DBG
+		if (irq == 38) {
+		vmm_lerror("%s(%"PRIu32"):%i: levels are equal\n", __func__, irq, __LINE__);
+		}
+#endif
 		vmm_write_unlock_irqrestore(&s->dist_lock, flags);
 		return;
 	}
@@ -231,9 +248,20 @@ static void gic_irq_handle(u32 irq, int cpu, int level, void *opaque)
 		GIC_SET_LEVEL(s, irq, cm);
 		if (GIC_TEST_TRIGGER(s, irq) || GIC_TEST_ENABLED(s, irq, cm)) {
 			GIC_SET_PENDING(s, irq, target);
+#if DBG
+			if (irq == 38) {
+				vmm_lerror("%s(%"PRIu32"):%i: set level and set pending\n", __func__, irq, __LINE__);
+			}
+#endif
 		}
 	} else {
 		GIC_CLEAR_LEVEL(s, irq, cm);
+#if DBG
+		if (irq == 38) {
+			vmm_lerror("%s(%"PRIu32"):%i: clear level. Test pending: %i\n",
+				   __func__, irq, __LINE__, GIC_TEST_PENDING(s, irq, cm));
+		}
+#endif
 	}
 
 	vmm_write_unlock_irqrestore(&s->dist_lock, flags);
@@ -260,6 +288,7 @@ static u32 gic_acknowledge_irq(struct gic_state *s, int cpu)
 	irq_flags_t dist_flags, cpu_flags;
 	struct gic_cpu_state *cpu_state = &s->cpu_state[cpu];
 
+
 	vmm_write_lock_irqsave(&cpu_state->cpu_lock, cpu_flags);
 
 	new_irq = cpu_state->current_pending;
@@ -276,6 +305,9 @@ static u32 gic_acknowledge_irq(struct gic_state *s, int cpu)
 
 	/* Clear pending flags for both level and edge triggered interrupts.
 	 * Level triggered IRQs will be reasserted once they become inactive. */
+#if DBG
+	vmm_lerror("ACK irq %i. Clear PENDING!\n", new_irq);
+#endif
 	GIC_CLEAR_PENDING(s, new_irq,
 			  GIC_TEST_MODEL(s, new_irq) ? GIC_ALL_CPU_MASK(s) : cm);
 
@@ -314,6 +346,9 @@ static void gic_complete_irq(struct gic_state *s, int cpu, int irq)
 	    GIC_TEST_ENABLED(s, irq, cm) &&
 	    GIC_TEST_LEVEL(s, irq, cm) &&
 	    (GIC_TARGET(s, irq) & cm) != 0) {
+#if DBG
+		vmm_lerror("Irq %i has been marked as pending\n", irq);
+#endif
 		GIC_SET_PENDING(s, irq, cm);
 		update = 1;
 	}
@@ -344,9 +379,81 @@ static void gic_complete_irq(struct gic_state *s, int cpu, int irq)
  release_lock:
 	vmm_write_unlock_irqrestore(&cpu_state->cpu_lock, cpu_flags);
 
+	bool unmask = FALSE;
+	struct ipuv3_state *ss = NULL;
+	if (irq == 38 || irq == 37 || irq == 40 || irq == 39 ||
+	    irq == 41 || irq == 42 || irq == 43 || irq == 44 ||
+	    irq == 129 || irq == 130) {
+//		GIC_CLEAR_PENDING(s, irq, cm);
+#if DBG
+		//vmm_lcritical("%i: EOI. Now set to low\n", irq);
+#endif
+//		vmm_devemu_emulate_irq(s->guest, irq, 0);
+		unmask = TRUE;
+		ss = ipuv3_state_for_irq(irq);
+		if (!ss) {
+			vmm_lalert("Fail to get state for irq %u\n", irq);
+		}
+	}
+
 	if (update == 2) {
 		gic_update(s);
 	}
+
+	if (ss) {
+		ss->in_irq = 0;
+
+#if 0
+		ipuv3_take_lock(ss);
+//		ipuv3_dump_cache(ss, IPUV3_CACHE_CTRL | IPUV3_CACHE_STAT);
+		ipuv3_irq_ignore_next(irq, 10);
+		ipuv3_cache_sync(ss, IPUV3_CACHE_CTRL | IPUV3_CACHE_STAT);
+		in_irq = ipuv3_in_irq_count(ss);
+		if (in_irq != 0) {
+			ipuv3_reset_irq_count(ss);
+		///	ipuv3_trigger_sw_interrupt(ss, irq);
+		}
+		ipuv3_release_lock(ss);
+#endif
+	}
+
+#if 0
+	if (unmask) {
+		u32 val;
+		int i;
+		const physical_addr_t base = 0x00A01000;
+		physical_addr_t off;
+		u32 r1, r2;
+
+		vmm_host_memory_read(base + 0x204, &r1, sizeof(u32), false);
+		vmm_host_memory_read(base + 0x284, &r2, sizeof(u32), false);
+
+		r1 &= ~0x40;
+		r2 &= ~0x40;
+
+		vmm_host_memory_write(base + 0x204, &r1, sizeof(u32), false);
+		vmm_host_memory_write(base + 0x284, &r2, sizeof(u32), false);
+
+
+		for (off = 0x200, i = 0; i <= 3; i++, off += 0x4) {
+			vmm_host_memory_read(base + off, &val, sizeof(u32), false);
+			vmm_lerror("0x%"PRIx32": 0x%"PRIx32"\n", off, val);
+		}
+
+		for (off = 0x280, i = 0; i <= 3; i++, off += 0x4) {
+			vmm_host_memory_read(base + off, &val, sizeof(u32), false);
+			vmm_lerror("0x%"PRIx32": 0x%"PRIx32"\n", off, val);
+		}
+
+
+#if DBG
+		vmm_lcritical("UNMASK %i\n", irq);
+#endif
+
+//		vmm_host_irq_unmask(irq);
+	}
+#endif
+
 }
 
 static int __gic_dist_readb(struct gic_state *s, int cpu, u32 offset, u8 *dst)
@@ -683,7 +790,7 @@ static int gic_dist_write(struct gic_state *s, int cpu, u32 offset,
 			break;
 		};
 		GIC_SET_PENDING(s, irq, mask);
-	} else {
+	} else {	
 		src_mask = ~src_mask;
 		for (i = 0; i < 4; i++) {
 			if (src_mask & 0xFF) {
@@ -746,6 +853,8 @@ static int gic_cpu_write(struct gic_state *s, u32 cpu, u32 offset,
 		  u32 src_mask, u32 src)
 {
 	int rc = VMM_OK;
+
+//vmm_lerror("%s(0x%"PRIx32") at 0x%"PRIx32"\n", __func__, src, offset) ;
 
 	if (!s) {
 		return VMM_EFAIL;
@@ -810,6 +919,17 @@ int gic_reg_write(struct gic_state *s, physical_addr_t offset,
 {
 	struct vmm_vcpu *vcpu;
 
+//	if (offset == 0x104 ||offset == 0x100 || 
+//	    offset == 0x184 ||offset == 0x180 ||
+//	    offset == 0x204 ||offset == 0x200 ||
+//	    offset == 0x284 ||offset == 0x280   ) {
+//if (offset != 0x110) {
+//		vmm_lerror("Wrote 0x%"PRIx32" at 0x%"PRIx32"\n",
+//			   src, offset);
+//}
+//	}
+
+
 	vcpu = vmm_scheduler_current_vcpu();
 	if (!vcpu || !vcpu->guest) {
 		return VMM_EFAIL;
@@ -817,6 +937,7 @@ int gic_reg_write(struct gic_state *s, physical_addr_t offset,
 	if (s->guest->id != vcpu->guest->id) {
 		return VMM_EFAIL;
 	}
+
 
 	if ((offset >= s->cpu.offset) &&
 	    (offset < (s->cpu.offset + s->cpu.length))) {

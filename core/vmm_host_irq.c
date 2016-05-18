@@ -432,7 +432,7 @@ int vmm_host_irq_enable(u32 hirq)
 		return VMM_ENOTAVAIL;
 
 	irq->state &= ~VMM_IRQ_STATE_DISABLED;
-	irq->state &= ~VMM_IRQ_STATE_MASKED;
+//	irq->state &= ~VMM_IRQ_STATE_MASKED;
 	if (irq->chip) {
 		if (irq->chip->irq_enable) {
 			irq->chip->irq_enable(irq);

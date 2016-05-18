@@ -37,6 +37,7 @@
 #include <vmm_heap.h>
 #include <vmm_modules.h>
 #include <vmm_devemu.h>
+#include <vmm_stdio.h>
 #include <emu/arm_mptimer_emulator.h>
 #include <emu/gic_emulator.h>
 
@@ -185,6 +186,10 @@ static int a9mpcore_reg_read(struct a9mp_priv_state *s,
 	} else {
 		/* Read GIC */
 		rc = gic_reg_read(s->gic, offset, dst);
+			if (offset == 0x104) {
+				vmm_lerror("Read 0x%"PRIx32" at 0x%"PRIx32"\n",
+					   *dst, offset);
+			}
 	}
 
 	return rc;
@@ -194,6 +199,8 @@ static int a9mpcore_reg_write(struct a9mp_priv_state *s,
 			      u32 offset, u32 regmask, u32 regval)
 {
 	int rc = VMM_OK;
+	int id, bit, irq;
+	
 
 	if (offset < 0x100) {
 		/* Write SCU */
@@ -204,6 +211,17 @@ static int a9mpcore_reg_write(struct a9mp_priv_state *s,
 	} else {
 		/* Write GIC */
 		rc = gic_reg_write(s->gic, offset, regmask, regval);
+
+		//	id = (offset - 0x100) * 32;
+		//	bit = (offset - 0x100) % 32;
+		//	irq = id + bit;
+			if (offset == 0x104 ||
+			    offset == 0x184 ||
+			    offset == 0x204 ||
+			    offset == 0x284) {
+				vmm_lerror("Wrote 0x%"PRIx32" at 0x%"PRIx32"\n",
+					   regval, offset);
+			}
 	}
 
 	return rc;

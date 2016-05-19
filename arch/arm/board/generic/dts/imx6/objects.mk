@@ -23,3 +23,4 @@
 
 board-dtbs-$(CONFIG_ARMV7A)+=dts/imx6/sabrelite-a9/one_guest_sabrelite-a9.dtb
 board-dtbs-$(CONFIG_ARMV7A)+=dts/imx6/sabrelite-a9/two_guest_sabrelite-a9.dtb
+board-dtbs-$(CONFIG_ARMV7A)+=dts/imx6/sabrelite-a9/two_guests_vexpress-a9.dtb

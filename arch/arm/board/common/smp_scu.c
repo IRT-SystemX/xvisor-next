@@ -158,7 +158,7 @@ int __init scu_init(struct vmm_devtree_node *np)
 	if (NULL == np) {
 		np = vmm_devtree_find_matching(NULL, scu_matches);
 		if (!np) {
-			vmm_lerror("Failed to find SCU node\n");
+			vmm_lerror("smp_scu", "Failed to find SCU node\n");
 			return VMM_ENODEV;
 		}
 	}
@@ -166,7 +166,7 @@ int __init scu_init(struct vmm_devtree_node *np)
 	rc = vmm_devtree_regmap(np, (virtual_addr_t *)&scu_base, 0);
 	vmm_devtree_dref_node(np);
 	if (rc) {
-		vmm_lerror("Failed to retrive SCU register mapping\n");
+		vmm_lerror("smp_scu", "Failed to retrive SCU register mapping\n");
 		return rc;
 	}
 

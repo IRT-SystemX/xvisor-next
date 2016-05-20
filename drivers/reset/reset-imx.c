@@ -171,7 +171,7 @@ int __init imx_src_init(struct vmm_devtree_node *np)
 	if (NULL == np) {
 		np = vmm_devtree_find_matching(NULL, imx_src_dt_ids);
 		if (!np) {
-			vmm_lerror("Failed to find " MODULE_NAME " node\n");
+			vmm_lerror("imx-src", "Failed to find " MODULE_NAME " node\n");
 			return VMM_ENODEV;
 		}
 	}
@@ -180,7 +180,7 @@ int __init imx_src_init(struct vmm_devtree_node *np)
 					MODULE_NAME);
 	vmm_devtree_dref_node(np);
 	if (VMM_OK != rc) {
-		vmm_lerror("Failed to retrive " MODULE_NAME
+		vmm_lerror("imx-src", "Failed to retrive " MODULE_NAME
 			   " register mapping\n");
 		return rc;
 	}

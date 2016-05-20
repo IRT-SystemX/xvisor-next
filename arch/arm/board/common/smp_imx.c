@@ -79,7 +79,7 @@ static int __init smp_imx_init(struct vmm_devtree_node *node,
 		return rc;
 	}
 
-	vmm_linfo("Secondary CPU jump address set to 0x%08x\n",
+	vmm_printf("Secondary CPU jump address set to 0x%08x\n",
 		  v7_secondary_startup_paddr);
 
 	scu_enable();

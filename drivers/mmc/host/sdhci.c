@@ -901,7 +901,7 @@ int sdhci_add_host(struct sdhci_host *host)
 		if (VMM_OK == rc) {
 			break;
 		}
-		vmm_lwarning("Failed to add the MMC host %d time(s)\n",
+		vmm_lwarning("sdhci", "Failed to add the MMC host %d time(s)\n",
 			     tries);
 		sdhci_reset(host, SDHCI_RESET_ALL);
 	}

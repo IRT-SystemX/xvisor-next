@@ -102,7 +102,7 @@ static char const* const _log_prefixes[] = {
 struct vmm_stdio_buffer {
 	char *buffer;
 	u32 size;
-	int pos;
+	int pw,pr;
 	int newline;
 	struct vmm_mutex lock;
 };
@@ -148,7 +148,7 @@ static bool vmm_stdio_isinit(void)
 	return (NULL != stdio_ctrl.thread);
 }
 
-static int vmm_stdio_flush(int cpu)
+static int vmm_stdio_flush(int cpu, int force)
 {
 	char *msg;
 	char *next;
@@ -177,29 +177,49 @@ static int vmm_stdio_flush(int cpu)
 	}
 
 	/* vmm_mutex_lock(&buf->lock); */
-	if (0 == buf->pos) {
+	if (buf->pr == buf->pw) {
 		goto out;
 	}
 
-	msg = buf->buffer;
-	next = strnchr(msg, buf->pos, '\n');
+	msg = buf->buffer + buf->pr;
 
-	while ((NULL != next) && ('\0' != *next)) {
+	/* by lines */
+	while (buf->pr != buf->pw) {
+		if (buf->pr > buf->pw) {
+			next = strnchr(msg, CONFIG_STDIO_BUFFER - buf->pr, '\n');
+			/* not found but present after wrap */
+			if (NULL == next) {
+				if (NULL != strnchr(buf->buffer, buf->pw, '\n')) {
+					next = buf->buffer + CONFIG_STDIO_BUFFER - 1;
+				}
+			}
+		} else {
+			next = strnchr(msg, buf->pw - buf->pr, '\n');
+		}
+		/* stop when not found */
+		if (NULL == next) break;
+
 		len = next - msg + 1;
-		vmm_chardev_dowrite(stdio_ctrl.dev, (u8 *)msg, len, NULL,
-				    TRUE);
-		buf->pos -= len;
+		vmm_chardev_dowrite(stdio_ctrl.dev, (u8 *)msg, len, NULL, TRUE);
+		buf->pr += len;
 		msg = next + 1;
-		next = strnchr(msg, buf->pos, '\n');
+		if (buf->pr  == CONFIG_STDIO_BUFFER) {
+			buf->pr = 0;
+			msg = buf->buffer;
+		}
 	}
-
 	/* Print remaining data */
-	if (buf->pos) {
-		vmm_chardev_dowrite(stdio_ctrl.dev, (u8 *)msg, buf->pos, NULL,
-				    TRUE);
+	if (force) {
+		if (buf->pr > buf->pw) {
+			vmm_chardev_dowrite(stdio_ctrl.dev, (u8 *)msg, CONFIG_STDIO_BUFFER - buf->pr, NULL, TRUE);
+			buf->pr = 0;
+			msg = buf->buffer;
+		}
+		if (buf->pr < buf->pw) {
+			vmm_chardev_dowrite(stdio_ctrl.dev, (u8 *)msg, buf->pw - buf->pr, NULL, TRUE);
+			buf->pr = buf->pw;
+		}
 	}
-
-	buf->pos = 0;
 
 out:
 	/* vmm_mutex_unlock(&buf->lock); */
@@ -207,11 +227,11 @@ out:
 	return VMM_OK;
 }
 
-static int vmm_stdio_io_avail(int block)
+static int vmm_stdio_io_avail(int block, int force)
 {
 	if (vmm_stdio_isinit() && stdio_ctrl.dev) {
 		if (block) {
-			return vmm_stdio_flush(arch_smp_id());
+			return vmm_stdio_flush(arch_smp_id(), force);
 		} else {
 			return vmm_completion_complete(&stdio_ctrl.io_avail);
 		}
@@ -228,14 +248,15 @@ static int vmm_stdio_write(struct vmm_chardev *cdev, char ch, int block)
 		int i;
 		u32 size;
 		char text[16];
-		size = vmm_snprintf(text, sizeof (text) - 1, "p%d %p ",
-			    buf->pos, buf);
+		size = vmm_snprintf(text, sizeof (text) - 1, "p%d %d %p ",
+			    buf->pw, buf->pr, buf);
 		for (i = 0; i < size; ++i) {
 			arch_defterm_early_putc((u8)text[i]);
 		}
 	}
 #endif
 
+#if 0
 	if (block) {
 		vmm_mutex_lock(&buf->lock);
 	} else {
@@ -243,16 +264,21 @@ static int vmm_stdio_write(struct vmm_chardev *cdev, char ch, int block)
 			return VMM_EAGAIN;
 		}
 	}
-
-	if (buf->pos + 1 >= CONFIG_STDIO_BUFFER) {
-		//vmm_stdio_io_avail(block);
-		buf->pos = 0;
+#endif
+	if ((buf->pw + 1) % CONFIG_STDIO_BUFFER == buf->pr) {
+		vmm_stdio_io_avail(block, true);
 	}
 
-	buf->buffer[buf->pos++] = ch;
+	buf->buffer[buf->pw++] = ch;
+	if (buf->pw  == CONFIG_STDIO_BUFFER) {
+		buf->pw = 0;
+	}
 
-	vmm_mutex_unlock(&buf->lock);
-	//vmm_stdio_io_avail(block);
+
+//	vmm_mutex_unlock(&buf->lock);
+	if (ch == '\n') {
+		vmm_stdio_io_avail(block, false);
+	}
 
 	return VMM_OK;
 }
@@ -940,7 +966,7 @@ int vmm_stdio_change_device(struct vmm_chardev *cdev)
 
 	stdio_ctrl.dev = cdev;
 
-	vmm_stdio_io_avail(false);
+	vmm_stdio_io_avail(false, false);
 
 	return VMM_OK;
 }
@@ -993,7 +1019,7 @@ static int vmm_stdio_thread(void *udata)
 		vmm_completion_wait_timeout(&stdio_ctrl.io_avail, &delay);
 
 		for (i = 0; i < CONFIG_CPU_COUNT; ++i) {
-			vmm_stdio_flush(i);
+			vmm_stdio_flush(i, true);
 		}
 	}
 

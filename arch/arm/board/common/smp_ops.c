@@ -49,6 +49,7 @@
 #include <smp_ops.h>
 
 #undef DEBUG
+#define DEBUG
 
 #ifdef DEBUG
 #define DPRINTF(msg...)		vmm_printf(msg)
@@ -243,6 +244,7 @@ int __init arch_smp_init_cpus(void)
 		if (smp_read_ops(dn, cpu) != 0)
 			goto next;
 
+		DPRINTF("before init CPU%d\n", cpu);
 		if (smp_cpu_ops[cpu]->cpu_init(dn, cpu))
 			goto next;
 
@@ -250,6 +252,9 @@ int __init arch_smp_init_cpus(void)
 			__func__, cpu, hwid);
 		smp_logical_map(cpu) = hwid;
 next:
+
+		DPRINTF("%s next: processed CPU%d -> HWID 0x%llx\n",
+			__func__, cpu, hwid);
 		cpu++;
 	}
 

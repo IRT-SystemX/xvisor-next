@@ -246,7 +246,7 @@ int __init arch_smp_init_cpus(void)
 		if (smp_cpu_ops[cpu]->cpu_init(dn, cpu))
 			goto next;
 
-		DPRINTF("%s: smp logical map CPU%0 -> HWID 0x%llx\n",
+		DPRINTF("%s: smp logical map CPU%d -> HWID 0x%llx\n",
 			__func__, cpu, hwid);
 		smp_logical_map(cpu) = hwid;
 next:

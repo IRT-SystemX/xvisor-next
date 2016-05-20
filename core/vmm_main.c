@@ -57,7 +57,7 @@ void __noreturn vmm_hang(void)
 {
         u32 lrval;
 	asm volatile(" mov     %0, lr\n\t" : "=r" (lrval) : : "memory", "cc");
-	vmm_printf("vmm_hang CPU%d lr=0x%08x\n ", vmm_smp_processor_id(), lrval);
+	vmm_printf("vmm_hang CPU%d lr=0x%08x\n", vmm_smp_processor_id(), lrval);
 	while (1) ;
 }
 

@@ -154,7 +154,24 @@ static int vmm_stdio_flush(int cpu)
 	u32 len;
 	struct vmm_stdio_buffer *buf = &per_cpu(stdio_buffer, cpu);
 
-	if (!buf->pos) {
+#if 0
+	if (cpu == 1) {
+		int i;
+		u32 size;
+		char text[16];
+		size = vmm_snprintf(text, sizeof (text) - 1, "P%d %p ",
+			    buf->pos, buf);
+#if 0
+
+		for (i = 0; i < size; ++i) {
+			arch_defterm_early_putc((u8)text[i]);
+		}
+#endif
+		vmm_chardev_dowrite(stdio_ctrl.dev, (u8 *)text, size, NULL, TRUE);
+	}
+#endif
+
+	if (!buf->buffer) {
 		return VMM_OK;
 	}
 
@@ -191,7 +208,7 @@ out:
 
 static int vmm_stdio_io_avail(int block)
 {
-	if (vmm_stdio_isinit()) {
+	if (vmm_stdio_isinit() && stdio_ctrl.dev) {
 		if (block) {
 			return vmm_stdio_flush(arch_smp_id());
 		} else {
@@ -205,6 +222,19 @@ static int vmm_stdio_write(struct vmm_chardev *cdev, char ch, int block)
 {
 	struct vmm_stdio_buffer *buf = &this_cpu(stdio_buffer);
 
+#if 1
+	if ((arch_smp_id() == 1)) {
+		int i;
+		u32 size;
+		char text[16];
+		size = vmm_snprintf(text, sizeof (text) - 1, "p%d %p ",
+			    buf->pos, buf);
+		for (i = 0; i < size; ++i) {
+			arch_defterm_early_putc((u8)text[i]);
+		}
+	}
+#endif
+
 	if (block) {
 		vmm_mutex_lock(&buf->lock);
 	} else {
@@ -214,14 +244,14 @@ static int vmm_stdio_write(struct vmm_chardev *cdev, char ch, int block)
 	}
 
 	if (buf->pos + 1 >= CONFIG_STDIO_BUFFER) {
-		vmm_stdio_io_avail(block);
+		//vmm_stdio_io_avail(block);
 		buf->pos = 0;
 	}
 
 	buf->buffer[buf->pos++] = ch;
 
 	vmm_mutex_unlock(&buf->lock);
-	vmm_stdio_io_avail(block);
+	//vmm_stdio_io_avail(block);
 
 	return VMM_OK;
 }
@@ -234,6 +264,13 @@ static int vmm_printchar(struct vmm_chardev *cdev, char ch, bool block)
 		return VMM_EFAIL;
 	}
 
+#if 0
+	// bypass buffering : direct io
+	if (arch_smp_id() == 1) {
+		arch_defterm_early_putc((u8)ch);
+		return VMM_OK;
+	}
+#endif
 	if (!stdio_init_done) {
 		arch_defterm_early_putc((u8)ch);
 		return VMM_OK;
@@ -271,6 +308,15 @@ void vmm_cputc(struct vmm_chardev *cdev, char ch)
 		for (i = 0; i < size; ++i) {
 			vmm_printchar(cdev, proc[i], TRUE);
 		}
+#if 0
+		if (arch_smp_id() == 1) {
+			size = vmm_snprintf(proc, sizeof (proc) - 1, "i%d c%d ",
+				    stdio_init_done, cdev?1:0);
+			for (i = 0; i < size; ++i) {
+				vmm_printchar(cdev, proc[i], TRUE);
+			}
+		}
+#endif
 		return;
 	}
 	vmm_printchar(cdev, ch, TRUE);
@@ -888,6 +934,8 @@ int vmm_stdio_change_device(struct vmm_chardev *cdev)
 
 	stdio_ctrl.dev = cdev;
 
+	vmm_stdio_io_avail(false);
+
 	return VMM_OK;
 }
 
@@ -974,6 +1022,9 @@ int __init vmm_stdio_init(void)
 			return VMM_EFAIL;
 		}
 		INIT_MUTEX(&buf->lock);
+
+		vmm_printf("stdio: cpu%d buf:%p buffer:%p\n",
+			i, buf, buf->buffer);
 	}
 
 	/* Initialize stdio worker thread */

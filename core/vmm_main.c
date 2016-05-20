@@ -565,6 +565,7 @@ static void __cpuinit init_secondary(void)
 
 void __cpuinit vmm_init(void)
 {
+	vmm_printf("JVDG vmm_init\n");
 #if defined(CONFIG_SMP)
 	/* Mark this CPU as Boot CPU
 	 * Note: This will only work on first CPU.

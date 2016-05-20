@@ -103,6 +103,7 @@ struct vmm_stdio_buffer {
 	char *buffer;
 	u32 size;
 	int pos;
+	int newline;
 	struct vmm_mutex lock;
 };
 
@@ -297,13 +298,14 @@ static int vmm_printchar(struct vmm_chardev *cdev, char ch, bool block)
 
 void vmm_cputc(struct vmm_chardev *cdev, char ch)
 {
-	if (ch == '\n') {
+	struct vmm_stdio_buffer *buf = &this_cpu(stdio_buffer);
+
+	if (buf->newline){
 		int i;
 		u32 size;
 		char proc[8];
 
-		vmm_printchar(cdev, '\r', TRUE);
-		size = vmm_snprintf(proc, sizeof (proc) - 1, "\n#%d ",
+		size = vmm_snprintf(proc, sizeof (proc) - 1, "#%d ",
 				    arch_smp_id());
 		for (i = 0; i < size; ++i) {
 			vmm_printchar(cdev, proc[i], TRUE);
@@ -317,7 +319,11 @@ void vmm_cputc(struct vmm_chardev *cdev, char ch)
 			}
 		}
 #endif
-		return;
+		buf->newline = 0;
+	}
+	if (ch == '\n') {
+		vmm_printchar(cdev, '\r', TRUE);
+		buf->newline = 1;
 	}
 	vmm_printchar(cdev, ch, TRUE);
 }
@@ -1022,6 +1028,8 @@ int __init vmm_stdio_init(void)
 			return VMM_EFAIL;
 		}
 		INIT_MUTEX(&buf->lock);
+		/* CPU0 is already printing, ignore it's newline state */
+		buf->newline = (i)?1:0;
 
 		vmm_printf("stdio: cpu%d buf:%p buffer:%p\n",
 			i, buf, buf->buffer);

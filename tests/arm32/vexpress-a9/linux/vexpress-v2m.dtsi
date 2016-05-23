@@ -106,6 +106,7 @@
 			v2m_i2c_pcie: i2c@02000 {
 				compatible = "arm,versatile-i2c";
 				reg = <0x02000 0x1000>;
+				status = "disabled";
 
 				#address-cells = <1>;
 				#size-cells = <0>;
@@ -212,6 +213,7 @@
 			v2m_i2c_dvi: i2c@16000 {
 				compatible = "arm,versatile-i2c";
 				reg = <0x16000 0x1000>;
+				status = "disabled";
 
 				#address-cells = <1>;
 				#size-cells = <0>;

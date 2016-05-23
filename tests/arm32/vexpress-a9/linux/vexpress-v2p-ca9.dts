@@ -25,8 +25,8 @@
 		serial1 = &v2m_serial1;
 		serial2 = &v2m_serial2;
 		serial3 = &v2m_serial3;
-		i2c0 = &v2m_i2c_dvi;
-		i2c1 = &v2m_i2c_pcie;
+		//i2c0 = &v2m_i2c_dvi;
+		//i2c1 = &v2m_i2c_pcie;
 	};
 
 	cpus {
@@ -377,6 +377,73 @@
 			compatible = "virtio,mmio";
 			reg = <8 0x00300000 0x1000>;
 			interrupts = <54>;
+		};
+
+		i2c1: virtio_i2c@00304000 {
+			compatible = "virtio,mmio";
+			reg = <8 0x00304000 0x4000>;
+			interrupts = <36>;
+			clocks = <&smbclk>;
+			clock-frequency = <100000>;
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			codec: sgtl5000@0a {
+				compatible = "fsl,sgtl5000";
+				reg = <0x0a>;
+				clocks = <&smbclk>;
+			//	VDDA-supply = <&reg_2p5v>;
+			//	VDDIO-supply = <&reg_3p3v>;
+			};
+			isl1207@6f {
+				compatible = "isl,isl1208";
+				reg = <0x6f>;
+			//	interrupt-parent = <&gpio6>;
+			//	interrupts = <7 IRQ_TYPE_EDGE_FALLING>;
+			};
+		};
+
+		i2c2: virtio_i2c@00308000 {
+			compatible = "virtio,mmio";
+			reg = <8 0x00308000 0x4000>;
+			interrupts = <37>;
+			clocks = <&smbclk>;
+			clock-frequency = <100000>;
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			hdmi: edid@50 {
+				compatible = "fsl,imx6-hdmi-i2c";
+				reg = <0x50>;
+			};
+		};
+
+		i2c3: virtio_i2c@0030c000 {
+			compatible = "virtio,mmio";
+			reg = <8 0x0030c000 0x4000>;
+			interrupts = <38>;
+			clocks = <&smbclk>;
+			clock-frequency = <100000>;
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			egalax_ts@04 {
+				compatible = "eeti,egalax_ts";
+				reg = <0x04>;
+			//	interrupt-parent = <&gpio1>;
+			//	interrupts = <9 2>;
+			//	wakeup-gpios = <&gpio1 9 0>;
+		        };
+		        ft5x06_ts@38 {
+				compatible = "ft5x06-ts,ft5x06-ts";
+				reg = <0x38>;
+			//	interrupt-parent = <&gpio1>;
+			//	interrupts = <9 2>;
+			//	wakeup-gpios = <&gpio1 9 0>;
+			};
 		};
 
 		/include/ "vexpress-v2m.dtsi"

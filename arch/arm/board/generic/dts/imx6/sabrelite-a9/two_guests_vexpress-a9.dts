@@ -28,14 +28,14 @@
 			"vfs mount mmc0p0 / 2",
 
 			/* Load guest0 device tree from file */
-			"vfs fdt_load /guests guest0 /images/arm32/vexpress-a9x2.dtb mem0,physical_size,physsize,0x06000000 net0,switch,string,br0 net1,switch,string,br0 disk0,blkdev,string,mmc0p1",
+			"vfs fdt_load /guests guest0 /images/arm32/vexpress-a9x2.dtb mem0,physical_size,physsize,0x06000000 net0,switch,string,br0 net1,switch,string,br0 disk0,blkdev,string,mmc0p1 i2c0,i2c_attach,string,i2c@021a0000 i2c2,i2c_attach,string,i2c@021a8000",
 			/* Create guest0 */
 			"guest create guest0",
 			/* Load guest0 images */
 			"vfs guest_load_list guest0 /images/arm32/vexpress-a9/nor_flash.list",
 
 			/* Load guest1 device tree from file */
-			"vfs fdt_load /guests guest1 /images/arm32/vexpress-a9x2.dtb mem0,physical_size,physsize,0x06000000 net0,switch,string,br0  net1,switch,string,br0 disk0,blkdev,string,mmc0p2",
+			"vfs fdt_load /guests guest1 /images/arm32/vexpress-a9x2.dtb mem0,physical_size,physsize,0x06000000 net0,switch,string,br0  net1,switch,string,br0 disk0,blkdev,string,mmc0p2 i2c1,i2c_attach,string,i2c@021a4000",
 			/* Create guest1 */
 			"guest create guest1",
 			/* Load guest1 images */

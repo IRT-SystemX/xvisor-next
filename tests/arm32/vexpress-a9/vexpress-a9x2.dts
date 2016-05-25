@@ -352,7 +352,7 @@
 			guest_physical_addr = <0x20304000>;
 			physical_size = <0x4000>;
 			interrupts = <68>;
-			i2c_attach = "i2c@021a0000";
+			i2c_attach = "";
 		};
 
 		I2C1: virtio-i2c1@20308000 {
@@ -364,7 +364,7 @@
 			guest_physical_addr = <0x20308000>;
 			physical_size = <0x4000>;
 			interrupts = <69>;
-			i2c_attach = "i2c@021a4000";
+			i2c_attach = "";
 		};
 
 		I2C2: virtio-i2c2@2030c000 {
@@ -376,7 +376,7 @@
 			guest_physical_addr = <0x2030c000>;
 			physical_size = <0x4000>;
 			interrupts = <70>;
-			i2c_attach = "i2c@021a8000";
+			i2c_attach = "";
 		};
 
 		nor_flash0 {

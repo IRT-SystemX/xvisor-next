@@ -162,10 +162,16 @@ static void orphan_i2c_transfer(struct vmm_guest * guest, void *param){
 		if (iov_cnt) {
 			len_read += get_msg_buf(vi2cdev);
 
-			/* i2c transfer */
-			ret = i2c_transfer(vi2cdev->adapter, &vi2cdev->msg, 1);
+			if (vi2cdev->adapter != NULL)
+				/* i2c transfer */
+				ret = i2c_transfer(vi2cdev->adapter,
+							&vi2cdev->msg, 1);
+			else
+				ret = VMM_ENODEV;
+
 			if (ret < 1)
-				DPRINTF("virtio i2c: call i2c transfert fail with error %d\n", ret);
+				DPRINTF("virtio i2c: call i2c transfert fail "
+						"with error %d\n", ret);
 
 			len_write += set_msg_buf(vi2cdev, ret);
 
@@ -304,7 +310,6 @@ static int virtio_i2c_reset(struct virtio_device *dev)
 static int virtio_i2c_connect(struct virtio_device *dev, 
 				  struct virtio_emulator *emu)
 {
-	int ret;
 	struct virtio_i2c_dev *i2cdev;
 
 	i2cdev = vmm_zalloc(sizeof(struct virtio_i2c_dev));
@@ -322,16 +327,13 @@ static int virtio_i2c_connect(struct virtio_device *dev,
 
 	/* Get adapters */
 	i2cdev->adapter = NULL;
-	ret = i2c_for_each_dev(dev, i2cimx_attach_adapter);
-	if (!ret)
-		goto free_buf;
+	i2c_for_each_dev(dev, i2cimx_attach_adapter);
 
-	rt_mutex_init(&i2cdev->adapter->bus_lock);
+	if (i2cdev->adapter != NULL)
+		rt_mutex_init(&i2cdev->adapter->bus_lock);
 
 	return VMM_OK;
 
-free_buf:
-	vmm_free(i2cdev->msg.buf);
 free_i2cdev:
 	vmm_free(i2cdev);
 out:

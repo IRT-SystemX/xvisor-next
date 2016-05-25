@@ -748,7 +748,7 @@
 				compatible = "virtio,mmio";
 				reg = <0x021a4000 0x4000>;
 				interrupts = <0 37 0x04>;
-				clocks = <&clks 125>;
+				clocks = <&clks 126>;
 				status = "disabled";
 			};
 
@@ -758,7 +758,7 @@
 				compatible = "virtio,mmio";
 				reg = <0x021a8000 0x4000>;
 				interrupts = <0 38 0x04>;
-				clocks = <&clks 125>;
+				clocks = <&clks 127>;
 				status = "disabled";
 			};
 

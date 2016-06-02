@@ -311,6 +311,9 @@ int __init arch_smp_prepare_cpus(unsigned int max_cpus)
 	 */
 	max_cpus--;
 	for_each_possible_cpu(cpu) {
+		DPRINTF("%s possible CPU%d f %d : ops:%d \n",
+			__func__, cpu, vmm_smp_processor_id(),
+			!!smp_cpu_ops[cpu]);
 		if (max_cpus == 0)
 			break;
 
@@ -321,6 +324,9 @@ int __init arch_smp_prepare_cpus(unsigned int max_cpus)
 			continue;
 
 		err = smp_cpu_ops[cpu]->cpu_prepare(cpu);
+		DPRINTF("%s possible CPU%d f %d : err:%d \n",
+			__func__, cpu, vmm_smp_processor_id(),
+			err);
 		if (err)
 			continue;
 
@@ -333,6 +339,7 @@ int __init arch_smp_prepare_cpus(unsigned int max_cpus)
 
 int __init arch_smp_start_cpu(u32 cpu)
 {
+	DPRINTF("%s CPU%d \n", __func__, cpu);
 	/* Boot SMP callback */
 	if (smp_cpu_ops[cpu]->cpu_boot) {
 		return smp_cpu_ops[cpu]->cpu_boot(cpu);

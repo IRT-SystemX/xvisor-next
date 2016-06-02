@@ -75,7 +75,7 @@ static int __init smp_imx_init(struct vmm_devtree_node *node,
 			    &v7_secondary_startup_paddr);
 	if (VMM_OK != rc) {
 		vmm_printf("Failed to get cpu jump physical address "
-			   "(0x%p)\n", v7_secondary_startup);
+			   "(0x%p)\n", &v7_secondary_startup);
 		return rc;
 	}
 
@@ -132,6 +132,10 @@ static int __init smp_imx_boot(unsigned int cpu)
 	/* Wake up the core through the SRC device */
 	scu_cpu_boot(cpu);
 	imx_enable_cpu(cpu, true);
+
+	if (!scu_cpu_core_is_smp(cpu)) {
+		vmm_printf("%s: CPU%d BAD SCU status\n", __func__, cpu);
+	}
 
 	return VMM_OK;
 }

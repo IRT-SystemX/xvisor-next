@@ -68,6 +68,7 @@ u32 scu_get_core_count(void)
 
 bool scu_cpu_core_is_smp(u32 cpu)
 {
+	vmm_printf("%s: CPU%d, SCU_CONFIG:0x%lx\n", __func__, cpu, vmm_readl(scu_base + SCU_CONFIG));
 	return (vmm_readl(scu_base + SCU_CONFIG) >> (4 + cpu)) & 0x01;
 }
 

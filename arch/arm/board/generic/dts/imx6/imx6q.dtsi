@@ -853,7 +853,7 @@
 			disp_dev = "ldb";
 			int_clk = <0>;
 			late_init = <0>;
-			status = "okay";
+			status = "disabled";
 		};
 
 		mxcfb2: fb@1 {
@@ -874,5 +874,3 @@
 		};
 	};
 };
-
-

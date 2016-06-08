@@ -243,7 +243,7 @@ static int vmm_stdio_write(struct vmm_chardev *cdev, char ch, int block)
 {
 	struct vmm_stdio_buffer *buf = &this_cpu(stdio_buffer);
 
-#if 1
+#if 0
 	if ((arch_smp_id() == 1)) {
 		int i;
 		u32 size;
@@ -966,7 +966,7 @@ int vmm_stdio_change_device(struct vmm_chardev *cdev)
 
 	stdio_ctrl.dev = cdev;
 
-	vmm_stdio_io_avail(false, false);
+	vmm_stdio_io_avail(true, false);
 
 	return VMM_OK;
 }
@@ -1067,7 +1067,7 @@ int __init vmm_stdio_init(void)
 					       VMM_THREAD_DEF_PRIORITY,
 					       VMM_THREAD_DEF_TIME_SLICE);
 	if (NULL == stdio_ctrl.thread) {
-		vmm_lerror("%s l.%d: Failed to create stdio worker thread\n",
+		vmm_lerror(NULL, "%s l.%d: Failed to create stdio worker thread\n",
 			   __FUNCTION__, __LINE__);
 		return VMM_EFAIL;
 	}

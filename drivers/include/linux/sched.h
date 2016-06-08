@@ -57,7 +57,8 @@ do {									\
 	__r = __r * (1000000000 / HZ);					\
 	if (!(cond)) 							\
 		vmm_waitqueue_sleep_event_timeout(&(wq), cond, &__r);	\
-	__r = udiv64(__r, (1000000000 / HZ));				\
+	__r = udiv64(__r, 1000000000);					\
+	__r = udiv64(__r, HZ);						\
 	(unsigned long)__r;						\
 })
 

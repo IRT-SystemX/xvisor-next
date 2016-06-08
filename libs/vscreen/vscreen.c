@@ -1357,7 +1357,6 @@ int vscreen_bind(bool is_hard,
 	/* Setup and intialize vscreen */
 	rc = vscreen_setup(cntx);
 	if (rc) {
-		vmm_free(cntx);
 		goto err_cntx;
 	}
 

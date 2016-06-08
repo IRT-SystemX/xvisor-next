@@ -555,6 +555,8 @@ static void __cpuinit init_secondary(void)
 	/* Inform architecture code about secondary cpu */
 	arch_smp_postboot();
 
+	vmm_printf("JVDG init_secondary end\n");
+
 	/* Start timer (Must be last step) */
 	vmm_timer_start();
 
@@ -565,7 +567,7 @@ static void __cpuinit init_secondary(void)
 
 void __cpuinit vmm_init(void)
 {
-	vmm_printf("JVDG vmm_init\n");
+//	vmm_printf("JVDG vmm_init\n");
 #if defined(CONFIG_SMP)
 	/* Mark this CPU as Boot CPU
 	 * Note: This will only work on first CPU.

@@ -43,10 +43,34 @@
  */
 
 #if defined(CONFIG_VTEMU)
-struct vtemu *generic_vt;
+#define VT_MAX_COUNT 4
+static struct vtemu *generic_vt[VT_MAX_COUNT];
 #endif
 
 static const struct vmm_devtree_nodeid *generic_board_matches;
+
+
+#if defined(CONFIG_VTEMU)
+static int _iterator_cb(struct fb_info *info, void *data)
+{
+	unsigned int *count = data;
+
+	if (*count >= VT_MAX_COUNT) {
+		vmm_lerror(NULL, "Only %i simultaneous vtemu are supported\n",
+			   VT_MAX_COUNT);
+		return VMM_EOVERFLOW;
+	}
+
+	generic_vt[*count] = vtemu_create(info->name, info, NULL);
+	if (!generic_vt[*count]) {
+		vmm_lerror(NULL, "Failed to create vtemu for \"%s\"\n", info->name);
+		return VMM_EFAIL;
+	}
+	(*count)++;
+
+	return VMM_OK;
+}
+#endif
 
 /*
  * Print board information
@@ -153,7 +177,7 @@ int __init arch_board_final_init(void)
 	int rc;
 	struct vmm_devtree_node *node;
 #if defined(CONFIG_VTEMU)
-	struct fb_info *info;
+	unsigned int count = 0;
 #endif
 
 	/* All VMM API's are available here */
@@ -174,10 +198,7 @@ int __init arch_board_final_init(void)
 
 	/* Create VTEMU instace if available */
 #if defined(CONFIG_VTEMU)
-	info = fb_find("fb0");
-	if (info) {
-		generic_vt = vtemu_create(info->name, info, NULL);
-	}
+	fb_iterate(NULL, &count, _iterator_cb);
 #endif
 
 	/* Final init of generic boards with 

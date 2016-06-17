@@ -1397,11 +1397,13 @@ static int lan9118_emulator_probe(struct vmm_guest *guest,
 				  struct vmm_emudev *edev,
 				  const struct vmm_devtree_nodeid *eid)
 {
-	int i, rc = VMM_OK;
+	int i, j, rc = VMM_OK;
 	char tname[64];
 	const char *attr;
 	struct vmm_netswitch *nsw;
 	struct lan9118_state *s = NULL;
+	char buf[3] = { '\0', '\0', '\0' };
+	bool invalid_macaddr = TRUE;
 
 	s = vmm_zalloc(sizeof(struct lan9118_state));
 	if (!s) {
@@ -1433,6 +1435,40 @@ static int lan9118_emulator_probe(struct vmm_guest *guest,
 	s->port->can_receive = lan9118_can_receive;
 	s->port->switch2port_xfer = lan9118_switch2port_xfer;
 	s->port->priv = s;
+
+	if (vmm_devtree_read_string(edev->node, VMM_DEVTREE_MACADDR_ATTR_NAME,
+				    &attr) == VMM_OK) {
+		j = 0;
+		i = 0;
+		while (*attr) {
+			if (*attr == ':') {
+				i = 0;
+				vmm_netport_mac(s->port)[j++] = strtol(buf, NULL, 16);
+			} else {
+				if (!isxdigit(*attr)) {
+					vmm_lerror(NULL, "Invalid MAC Address\n");
+					break;
+				}
+				buf[i] = *attr;
+				i++;
+			}
+
+			if (i >= 3) {
+				vmm_lerror(NULL, "Invalid MAC Address\n");
+				break;
+			}
+		}
+		if (j == 6) {
+			invalid_macaddr = FALSE;
+		}
+	}
+
+
+	if (invalid_macaddr) {
+		for (i = 0; i < 6; i++) {
+			vmm_netport_mac(s->port)[i] = 0;
+		}
+	}
 
 	rc = vmm_netport_register(s->port);
 	if (rc) {

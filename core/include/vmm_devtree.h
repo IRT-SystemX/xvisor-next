@@ -69,6 +69,7 @@
 #define VMM_DEVTREE_VMMINFO_NODE_NAME		"vmm"
 #define VMM_DEVTREE_VMMNET_NODE_NAME		"net"
 #define VMM_DEVTREE_NETSTACK_NODE_NAME		"hoststack"
+#define VMM_DEVTREE_MACADDR_ATTR_NAME		"macaddr"
 
 #define VMM_DEVTREE_MEMORY_NODE_NAME		"memory"
 #define VMM_DEVTREE_MEMORY_PHYS_ADDR_ATTR_NAME	"physical_addr"

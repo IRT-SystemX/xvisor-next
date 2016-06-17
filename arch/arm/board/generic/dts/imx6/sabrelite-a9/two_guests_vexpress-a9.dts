@@ -23,6 +23,7 @@
 		bootcmd =
 			"backlight brightness backlight_lvds 6",
 			"fb logo fb0",
+			"fb logo fb2",
 
 			/* Mount SD device */
 			"vfs mount mmc0p0 / 2",
@@ -33,13 +34,17 @@
 			"guest create guest0",
 			/* Load guest0 images */
 			"vfs guest_load_list guest0 /images/arm32/vexpress-a9/nor_flash.list",
+			"vscreen hard_bind guest0 fb0",
+                        "vdisk attach guest0/virtio-blk0 mmc0p1",
 
 			/* Load guest1 device tree from file */
-			"vfs fdt_load /guests guest1 /images/arm32/vexpress-a9x2.dtb mem0,physical_size,physsize,0x06000000 net0,switch,string,br0  net1,switch,string,br0",
+			"vfs fdt_load /guests guest1 /images/arm32/vexpress-a9x2.dtb mem0,physical_size,physsize,0x06000000 net0,switch,string,br0 net1,switch,string,br0",
 			/* Create guest1 */
 			"guest create guest1",
 			/* Load guest1 images */
-			"vfs guest_load_list guest1 /images/arm32/vexpress-a9/nor_flash.list",
+			"vfs guest_load_list guest1 /images/arm32/vexpress-a9/nor_flash2.list",
+			"vscreen hard_bind guest1 fb2",
+                        "vdisk attach guest1/virtio-blk0 mmc0p2",
 
 			/* Print banner */
 			"vfs cat /system/banner.txt",

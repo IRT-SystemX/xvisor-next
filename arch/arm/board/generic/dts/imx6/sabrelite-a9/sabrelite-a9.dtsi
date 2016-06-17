@@ -99,7 +99,7 @@
 	status = "okay";
 	interface_pix_fmt = "RGB24";
 	default_bpp = <16>;
-	mode_str ="640x480@60";
+        mode_str = "";
 };
 
 &i2c1 {

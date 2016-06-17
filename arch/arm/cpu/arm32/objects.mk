@@ -38,7 +38,7 @@ arch-$(CONFIG_ARMV5) += -D__ARM_ARCH_VERSION__=5 -mno-thumb-interwork -march=arm
 tune-y	= 
 
 # Need -Uarm for gcc < 3.x
-cpu-cppflags+=-DCPU_TEXT_START=0xFF000000
+cpu-cppflags+=-DCPU_TEXT_START=0xFC000000
 cpu-cflags += -msoft-float -marm -Uarm $(arch-y) $(tune-y)
 cpu-cflags += -fno-strict-aliasing -O2
 ifeq ($(CONFIG_ARM32_STACKTRACE), y)

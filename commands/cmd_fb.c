@@ -157,6 +157,21 @@ static int cmd_fb_info(struct vmm_chardev *cdev, struct fb_info *info)
 		vmm_cprintf(cdev, "\n");
 	}
 
+        vmm_cprintf(cdev, "Mode   :\n");
+        vmm_cprintf(cdev, "  refresh      : %"PRIu32"\n", info->mode->refresh);
+        vmm_cprintf(cdev, "  xres         : %"PRIu32"\n", info->mode->xres);
+        vmm_cprintf(cdev, "  yres         : %"PRIu32"\n", info->mode->yres);
+        vmm_cprintf(cdev, "  pixclock     : %"PRIu32"\n", info->mode->pixclock);
+        vmm_cprintf(cdev, "  left_margin  : %"PRIu32"\n", info->mode->left_margin);
+        vmm_cprintf(cdev, "  right_margin : %"PRIu32"\n", info->mode->right_margin);
+        vmm_cprintf(cdev, "  upper_margin : %"PRIu32"\n", info->mode->upper_margin);
+        vmm_cprintf(cdev, "  lower_margin : %"PRIu32"\n", info->mode->lower_margin);
+        vmm_cprintf(cdev, "  hsync_len    : %"PRIu32"\n", info->mode->hsync_len);
+        vmm_cprintf(cdev, "  vsync_len    : %"PRIu32"\n", info->mode->vsync_len);
+        vmm_cprintf(cdev, "  sync         : %"PRIu32"\n", info->mode->sync);
+        vmm_cprintf(cdev, "  vmode        : 0x%"PRIx32"\n", info->mode->vmode);
+        vmm_cprintf(cdev, "  flag         : 0x%"PRIx32"\n", info->mode->flag);
+
 	return VMM_OK;
 }
 

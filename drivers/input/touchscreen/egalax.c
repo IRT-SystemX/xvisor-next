@@ -40,6 +40,7 @@
 #include <vmm_modules.h>
 #include <vmm_error.h>
 #include <vmm_heap.h>
+#include <vmm_timer.h>
 #include <linux/input/mt.h>
 #include <linux/i2c.h>
 #include <linux/interrupt.h>
@@ -103,27 +104,26 @@ struct egalax {
 	struct input_dev *input_dev;
 	struct egalax_pointer		events[MAX_SUPPORT_POINTS];
 	int gpio;
+	int done;
+
+	struct vmm_timer_event timer;
 };
 
 static void egalax_i2c_job(struct vmm_work *work)
 {
 	struct egalax *const ts = container_of(work, struct egalax, job);
 
-	vmm_printf("***** work = %p, egalax = %p\n", work, ts);
-
-	mutex_lock(&ts->lock);
+//	vmm_printf("***** work = %p, egalax = %p\n", work, ts);
 
 	struct input_dev *input_dev = ts->input_dev;
 	struct i2c_client *client = ts->client;
 	struct egalax_pointer *events = ts->events;
-	char buf[MAX_I2C_DATA_LEN];
-	int i, id, ret, x, y;
+	char buffer[MAX_I2C_DATA_LEN];
+	char *buf = buffer;
+	int i, id, ret, x, y, z;
 	int tries = 0;
 	bool down, valid;
 	u8 state;
-
-	vmm_lcritical(NULL, "Driver egalax is orphan: %i\n",
-		  vmm_scheduler_orphan_context());
 
 	do {
 		ret = i2c_master_recv(client, buf, MAX_I2C_DATA_LEN);
@@ -131,43 +131,30 @@ static void egalax_i2c_job(struct vmm_work *work)
 
 	if (ret < 0) {
 		vmm_lerror(NULL, "Did not receive anything from I2C master\n");
-		goto unlock;
+		goto end;
 	}
 
+	// FIXME WHAAAAAT???? WHY DO I NEEEED THAT ?????
+	buf += 2;
+
+#if defined(DEV_DEBUG) && 0
 	dev_dbg(&client->dev, "recv ret:%d", ret);
 	for (i = 0; i < MAX_I2C_DATA_LEN; i++) {
-		dev_dbg(&client->dev, " %x ", buf[i]);
+		vmm_printf(" 0x%02x ", buf[i]);
 	}
+	vmm_printf("\n");
+#endif
 
-	if ((buf[0] != REPORT_MODE_VENDOR) &&
-	    (buf[0] != REPORT_MODE_SINGLE) &&
-	    (buf[0] != REPORT_MODE_MTTOUCH)) {
-		/* invalid point */
-		vmm_lerror(NULL, "Invlid point\n");
-		goto unlock;
-	}
-
-	if (buf[0] == REPORT_MODE_VENDOR) {
-		dev_dbg(&client->dev, "vendor message, ignored\n");
-		goto unlock;
+	if (buf[0] != REPORT_MODE_MTTOUCH) {
+		goto end;
 	}
 
 	state = buf[1];
 	x = (buf[3] << 8) | buf[2];
 	y = (buf[5] << 8) | buf[4];
+	z = (buf[7] << 8) | buf[6];
 
-	/* Currently, the panel Freescale using on SMD board _NOT_
-	 * support single pointer mode. All event are going to
-	 * multiple pointer mode.  Add single pointer mode according
-	 * to EETI eGalax I2C programming manual.
-	 */
-	if (buf[0] == REPORT_MODE_SINGLE) {
-		input_report_abs(input_dev, ABS_X, x);
-		input_report_abs(input_dev, ABS_Y, y);
-		input_report_key(input_dev, BTN_TOUCH, !!state);
-		input_sync(input_dev);
-		goto unlock;
-	}
+//	vmm_lnotice(NULL, "x, y = %i, %i\n", x, y);
 
 	valid = state & EVENT_VALID_MASK;
 	id = (state & EVENT_ID_MASK) >> EVENT_ID_OFFSET;
@@ -175,69 +162,48 @@ static void egalax_i2c_job(struct vmm_work *work)
 
 	if (!valid || id > MAX_SUPPORT_POINTS) {
 		dev_dbg(&client->dev, "point invalid\n");
-		goto unlock;
+		goto end;
 	}
+
+	input_mt_slot(input_dev, id);
+	input_mt_report_slot_state(input_dev, MT_TOOL_FINGER, down);
+
+	dev_dbg(&client->dev, "%s id:%d x:%d y:%d z:%d\n",
+		down ? "down" : "up", id, x, y, z);
 
 	if (down) {
-		events[id].valid = valid;
-		events[id].status = down;
-		events[id].x = x;
-		events[id].y = y;
-
-//#ifdef CONFIG_TOUCHSCREEN_EGALAX_SINGLE_TOUCH
-//		input_report_abs(input_dev, ABS_X, x);
-//		input_report_abs(input_dev, ABS_Y, y);
-//		input_event(ts->input_dev, EV_KEY, BTN_TOUCH, 1);
-//		input_report_abs(input_dev, ABS_PRESSURE, 1);
-//#endif
-	} else {
-		dev_dbg(&client->dev, "release id:%d\n", id);
-		events[id].valid = 0;
-		events[id].status = 0;
-//#ifdef CONFIG_TOUCHSCREEN_EGALAX_SINGLE_TOUCH
-//		input_report_key(input_dev, BTN_TOUCH, 0);
-//		input_report_abs(input_dev, ABS_PRESSURE, 0);
-//#else
-		input_report_abs(input_dev, ABS_MT_TRACKING_ID, id);
-		input_event(input_dev, EV_ABS, ABS_MT_TOUCH_MAJOR, 0);
-		input_mt_sync(input_dev);
-//#endif
+		input_report_abs(input_dev, ABS_MT_POSITION_X, x);
+		input_report_abs(input_dev, ABS_MT_POSITION_Y, y);
+		input_report_abs(input_dev, ABS_MT_PRESSURE, z);
 	}
 
-//#ifndef CONFIG_TOUCHSCREEN_EGALAX_SINGLE_TOUCH
-	/* report all pointers */
-	for (i = 0; i < MAX_SUPPORT_POINTS; i++) {
-		if (!events[i].valid)
-			continue;
-		dev_dbg(&client->dev, "report id:%d valid:%d x:%d y:%d",
-			i, valid, x, y);
-			input_report_abs(input_dev,
-				 ABS_MT_TRACKING_ID, i);
-		input_report_abs(input_dev,
-				 ABS_MT_TOUCH_MAJOR, 1);
-		input_report_abs(input_dev,
-				 ABS_MT_POSITION_X, events[i].x);
-		input_report_abs(input_dev,
-				 ABS_MT_POSITION_Y, events[i].y);
-		input_mt_sync(input_dev);
-	}
-//#endif
+	input_mt_report_pointer_emulation(input_dev, true);
 	input_sync(input_dev);
+end:
+	vmm_timer_event_restart(&ts->timer);
 
-unlock:;
-	mutex_unlock(&ts->lock);
 //	gpio_direction_input(ts->gpio);
 //	vmm_host_irq_set_type(client->irq, VMM_IRQ_TYPE_LEVEL_LOW);
 //	vmm_host_irq_unmask(client->irq);
+}
+
+static void timer_event(struct vmm_timer_event *ev)
+{
+	struct egalax *const e = ev->priv;
+//	vmm_lerror(NULL, "*** %s()\n", __func__);
+	//egalax_i2c_job(&e->job);
+	vmm_workqueue_schedule_work(NULL, &e->job);
 }
 
 
 static irqreturn_t egalax_isr(int irq, void *dev_id)
 {
 	struct egalax *const e = dev_id;
-	vmm_lalert(NULL, "%s()\n", __func__);
+	vmm_lalert(NULL, "%s(%i)\n", __func__, irq);
+	gpiolib_dump(e->gpio);
 	vmm_workqueue_schedule_work(NULL, &e->job);
-//	vmm_host_irq_set_type(e->client->irq, VMM_IRQ_TYPE_LEVEL_HIGH);
+//	vmm_host_irq_set_type(e->client->irq, VMM_IRQ_TYPE_LEVEL_EDGE);
+
 //	gpio_direction_output(e->gpio, 1);
 	return IRQ_HANDLED;
 }
@@ -315,6 +281,9 @@ static int egalax_probe(struct i2c_client *client,
 
 	e->input_dev = input_dev;
 	e->client = client;
+	e->done = 0;
+
+	i2c_set_clientdata(client, e);
 
 	rc = egalax_wake_up_device(e);
 	if (rc) {
@@ -329,9 +298,10 @@ static int egalax_probe(struct i2c_client *client,
 		goto fail;
 	}
 
-	input_dev->name = "eGalax Touch Screen";
+	input_dev->name = "EETI eGalax Touch Screen";
 	input_dev->phys = "I2C",
 	input_dev->id.bustype = BUS_I2C;
+
 	input_dev->id.vendor = 0x0EEF;
 	input_dev->id.product = 0x0020;
 	input_dev->id.version = 0x0001;
@@ -340,30 +310,22 @@ static int egalax_probe(struct i2c_client *client,
 	__set_bit(EV_ABS, input_dev->evbit);
 	__set_bit(EV_KEY, input_dev->evbit);
 	__set_bit(BTN_TOUCH, input_dev->keybit);
-	__set_bit(ABS_X, input_dev->absbit);
-	__set_bit(ABS_Y, input_dev->absbit);
-	__set_bit(ABS_PRESSURE, input_dev->absbit);
+
+//	__set_bit(ABS_X, input_dev->absbit);
+//	__set_bit(ABS_Y, input_dev->absbit);
+//	__set_bit(ABS_PRESSURE, input_dev->absbit);
+
 	input_set_abs_params(input_dev, ABS_X, 0, EGALAX_MAX_X, 0, 0);
 	input_set_abs_params(input_dev, ABS_Y, 0, EGALAX_MAX_Y, 0, 0);
-	input_set_abs_params(input_dev, ABS_PRESSURE, 0, 1, 0, 0);
-
-//#ifndef CONFIG_TOUCHSCREEN_EGALAX_SINGLE_TOUCH
 	input_set_abs_params(input_dev, ABS_MT_POSITION_X,
 				0, EGALAX_MAX_X, 0, 0);
 	input_set_abs_params(input_dev, ABS_MT_POSITION_Y,
 				0, EGALAX_MAX_Y, 0, 0);
-	input_set_abs_params(input_dev, ABS_MT_TOUCH_MAJOR, 0, 255, 0, 0);
-	input_set_abs_params(input_dev, ABS_MT_WIDTH_MAJOR, 0, 255, 0, 0);
-	input_set_abs_params(input_dev, ABS_MT_TRACKING_ID, 0,
-			     MAX_SUPPORT_POINTS, 0, 0);
-//#endif
+	input_mt_init_slots(input_dev, MAX_SUPPORT_POINTS, 0);
 
 	input_set_drvdata(input_dev, e);
 
-	vmm_lcritical(NULL, "Driver egalax is orphan: %i\n",
-		  vmm_scheduler_orphan_context());
 	vmm_lnotice(NULL," client irq is %i\n", client->irq);
-
 
 	rc = input_register_device(e->input_dev);
 	if (rc) {
@@ -371,17 +333,19 @@ static int egalax_probe(struct i2c_client *client,
 		goto fail_unregister;
 	}
 
-	i2c_set_clientdata(client, e);
 
 	INIT_WORK(&e->job, egalax_i2c_job);
-	INIT_MUTEX(&e->lock);
+//	INIT_MUTEX(&e->lock);
+	INIT_TIMER_EVENT(&e->timer, timer_event, e);
 
-	vmm_printf("**** work = %p, egalax = %p, irq = %i\n", &e->job, e, client->irq);
-	rc = vmm_host_irq_set_type(client->irq, VMM_IRQ_TYPE_LEVEL_LOW);
-	if (rc) {
-		vmm_lerror(NULL, "Failed to set IRQ type\n");
-		goto fail;
-	}
+	vmm_timer_event_start(&e->timer, 100000LL);
+
+//	vmm_printf("**** work = %p, egalax = %p, irq = %i\n", &e->job, e, client->irq);
+//	rc = vmm_host_irq_set_type(client->irq, VMM_IRQ_TYPE_LEVEL_LOW);
+//	if (rc) {
+//		vmm_lerror(NULL, "Failed to set IRQ type\n");
+//		goto fail;
+//	}
 //	rc = vmm_host_irq_register(client->irq, "eGalax", egalax_isr, e);
 //	if (rc) {
 //		vmm_lerror(NULL, "Failed to register IRQ %i\n", client->irq);

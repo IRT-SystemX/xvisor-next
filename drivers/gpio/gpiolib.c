@@ -1786,14 +1786,15 @@ static void gpiolib_dbg_show(struct seq_file *s, struct gpio_chip *chip)
 		gpiod_get_direction(gdesc);
 		is_out = test_bit(FLAG_IS_OUT, &gdesc->flags);
 		is_irq = test_bit(FLAG_USED_AS_IRQ, &gdesc->flags);
-		seq_printf(s, " gpio-%-3d (%-20s) %s %s %s irq_no=%i",
+		seq_printf(s, " gpio-%-3d (%-20s) %s %s %s irq_no=%i, flags=0x%lx",
 			gpio, gdesc->label,
 			is_out ? "out" : "in ",
 			chip->get
 				? (chip->get(chip, i) ? "high" : "low")
 				: "?  ",
 			is_irq ? "IRQ" : "   ",
-			gpiod_to_irq(gdesc)
+			gpiod_to_irq(gdesc),
+			gdesc->flags
 			);
 		seq_printf(s, "\n");
 	}

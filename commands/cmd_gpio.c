@@ -72,6 +72,7 @@ static int cmd_gpio_set(struct vmm_chardev *cdev, int argc, char **argv)
 	} dir = GPIO_INVALID;
 	unsigned int gpio;
 	unsigned int val;
+	int rc;
 
 	if ((argc < 2) || (argc > 4)) {
 		goto fail;
@@ -89,23 +90,22 @@ static int cmd_gpio_set(struct vmm_chardev *cdev, int argc, char **argv)
 		if (dir != GPIO_IN) {
 			goto fail;
 		}
-		gpio_direction_input(gpio);
+		rc = gpio_direction_input(gpio);
+		if (rc) {
+			vmm_cprintf(cdev, "*** Error: %i\n", rc);
+			return VMM_EFAIL;
+		}
 	} else if (argc == 4) {
 		if (dir != GPIO_OUT) {
 			goto fail;
 		}
 		ptr = argv[3];
-		if (ptr[0] == '0') {
-			val = 0;
-		} else if (ptr[0] == '1') {
-			val = 1;
-		} else {
-			goto fail;
+		val = atoi(ptr);
+		rc = gpio_direction_output(gpio, val);
+		if (rc) {
+			vmm_cprintf(cdev, "*** Error: %i\n", rc);
+			return VMM_EFAIL;
 		}
-		if (ptr[1] != '\0') {
-			goto fail;
-		}
-		gpio_direction_output(gpio, val);
 	}
 
 	return VMM_OK;

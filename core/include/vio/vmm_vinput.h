@@ -134,6 +134,8 @@ struct vmm_vmouse {
 	u32 graphics_width;
 	u32 graphics_height;
 	u32 graphics_rotation;
+	int abs_x;
+	int abs_y;
 	void (*mouse_event) (struct vmm_vmouse *vmou, 
 			   int dx, int dy, int dz, int buttons_state);
 	void *priv;

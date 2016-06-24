@@ -629,14 +629,16 @@ static int vscreen_event(struct input_handler *ihnd,
 			 unsigned int type, unsigned int code, int value)
 {
 	struct vscreen_context *cntx = ihnd->priv;
+	struct input_absinfo *const absinfo = idev->absinfo;
+	int tmp;
 
 	/* Do nothing if freezed */
 	if (cntx->freeze) {
 		goto done;
 	}
 
-	DPRINTF("%s: type=%d code=%d value=%d\n",
-		__func__, type, code, value);
+//	vmm_printf("%s: type=%d code=%d value=%d\n",
+//		__func__, type, code, value);
 
 	/* Process SYN, KEY and REL events */
 	switch (type) {
@@ -649,6 +651,8 @@ static int vscreen_event(struct input_handler *ihnd,
 		}
 		/* Process mouse event */
 		if (cntx->mouse_event) {
+			vmm_printf("Mouse Event: dx,dy = %i,%i\n",
+				   cntx->mouse_dx, cntx->mouse_dy);
 			vscreen_mouse_event(cntx,
 					cntx->mouse_btn,
 					cntx->mouse_dx,
@@ -666,11 +670,14 @@ static int vscreen_event(struct input_handler *ihnd,
 		break;
 	case EV_KEY:
 		switch (code) {
+		case BTN_TOUCH:
 		case BTN_LEFT:
 			cntx->mouse_event = TRUE;
 			if (value == 0) { /* button-release */
+				vmm_printf("MOUSE UP\n");
 				cntx->mouse_btn &= ~VMM_MOUSE_LBUTTON;
 			} else if (value == 1) { /* button-press */
+				vmm_printf("MOUSE DOWN\n");
 				cntx->mouse_btn |= VMM_MOUSE_LBUTTON;
 			}
 			break;
@@ -717,6 +724,27 @@ static int vscreen_event(struct input_handler *ihnd,
 			break;
 		};
 		break;
+
+	case EV_ABS:
+		switch (code) {
+		case ABS_MT_POSITION_X:
+			cntx->mouse_event = TRUE;
+			tmp = udiv32(value * cntx->hard_var.xres, absinfo[ABS_X].maximum);
+			vmm_printf("value = %i, xres =  %i, xmax = %i\n",
+				   value , cntx->hard_var.xres, absinfo[ABS_X].maximum);
+
+			cntx->mouse_dx = tmp - cntx->vmou->abs_x;
+			break;
+		case ABS_MT_POSITION_Y:
+			cntx->mouse_event = TRUE;
+			tmp = udiv32(value * cntx->hard_var.yres, absinfo[ABS_Y].maximum);
+			cntx->mouse_dy = tmp - cntx->vmou->abs_y;
+			break;
+		default:
+			break;
+		}
+		break;
+
 	default:
 		break;
 	};
@@ -1068,7 +1096,8 @@ static int vscreen_setup(struct vscreen_context *cntx)
 	cntx->hndl.name = cntx->name;
 	cntx->hndl.evbit[0] = BIT_MASK(EV_SYN) |
 				BIT_MASK(EV_KEY) |
-				BIT_MASK(EV_REL);
+				BIT_MASK(EV_REL) |
+				BIT_MASK(EV_ABS);
 	cntx->hndl.event = vscreen_event;
 	cntx->hndl.priv = cntx;
 	rc = input_register_handler(&cntx->hndl);

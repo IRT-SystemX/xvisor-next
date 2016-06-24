@@ -50,6 +50,8 @@
 #include <linux/of_gpio.h>
 #include <linux/delay.h>
 
+static const u64 _sched = 1000ULL * 1000ULL;// * 1000ULL * 1000ULL;
+
 /*
  * Mouse Mode: some panel may configure the controller to mouse mode,
  * which can only report one point at a given time.
@@ -89,41 +91,27 @@
 #define	MODULE_INIT		        egalax_init
 #define	MODULE_EXIT		        egalax_exit
 
-struct egalax_pointer {
-	bool valid;
-	bool status;
-	u16 x;
-	u16 y;
-};
-
 struct egalax {
 	struct vmm_work job;
-	struct vmm_mutex lock;
-
 	struct i2c_client *client;
 	struct input_dev *input_dev;
-	struct egalax_pointer		events[MAX_SUPPORT_POINTS];
-	int gpio;
-	int done;
-
 	struct vmm_timer_event timer;
 };
 
 static void egalax_i2c_job(struct vmm_work *work)
 {
 	struct egalax *const ts = container_of(work, struct egalax, job);
-
-//	vmm_printf("***** work = %p, egalax = %p\n", work, ts);
-
 	struct input_dev *input_dev = ts->input_dev;
 	struct i2c_client *client = ts->client;
-	struct egalax_pointer *events = ts->events;
 	char buffer[MAX_I2C_DATA_LEN];
 	char *buf = buffer;
 	int i, id, ret, x, y, z;
 	int tries = 0;
 	bool down, valid;
 	u8 state;
+
+	static int saved_x = -1;
+	static int saved_y = -1;
 
 	do {
 		ret = i2c_master_recv(client, buf, MAX_I2C_DATA_LEN);
@@ -135,7 +123,7 @@ static void egalax_i2c_job(struct vmm_work *work)
 	}
 
 	// FIXME WHAAAAAT???? WHY DO I NEEEED THAT ?????
-	buf += 2;
+//	buf += 2;
 
 #if defined(DEV_DEBUG) && 0
 	dev_dbg(&client->dev, "recv ret:%d", ret);
@@ -154,7 +142,11 @@ static void egalax_i2c_job(struct vmm_work *work)
 	y = (buf[5] << 8) | buf[4];
 	z = (buf[7] << 8) | buf[6];
 
-//	vmm_lnotice(NULL, "x, y = %i, %i\n", x, y);
+//	if ((x == saved_x) && (y == saved_y)) {
+//		goto end;
+//	}
+	saved_x = x;
+	saved_y = y;
 
 	valid = state & EVENT_VALID_MASK;
 	id = (state & EVENT_ID_MASK) >> EVENT_ID_OFFSET;
@@ -179,34 +171,30 @@ static void egalax_i2c_job(struct vmm_work *work)
 
 	input_mt_report_pointer_emulation(input_dev, true);
 	input_sync(input_dev);
-end:
-	vmm_timer_event_restart(&ts->timer);
 
-//	gpio_direction_input(ts->gpio);
-//	vmm_host_irq_set_type(client->irq, VMM_IRQ_TYPE_LEVEL_LOW);
-//	vmm_host_irq_unmask(client->irq);
+	tries = 0;
+	do {
+		ret = i2c_master_recv(client, buf, MAX_I2C_DATA_LEN);
+	} while ((ret > 0) && (tries++ < 10));
+end:
+	/* FIXME This is terrible */
+	vmm_timer_event_start(&ts->timer, _sched);
 }
 
 static void timer_event(struct vmm_timer_event *ev)
 {
 	struct egalax *const e = ev->priv;
-//	vmm_lerror(NULL, "*** %s()\n", __func__);
-	//egalax_i2c_job(&e->job);
 	vmm_workqueue_schedule_work(NULL, &e->job);
 }
 
-
+#if 0
 static irqreturn_t egalax_isr(int irq, void *dev_id)
 {
 	struct egalax *const e = dev_id;
-	vmm_lalert(NULL, "%s(%i)\n", __func__, irq);
-	gpiolib_dump(e->gpio);
 	vmm_workqueue_schedule_work(NULL, &e->job);
-//	vmm_host_irq_set_type(e->client->irq, VMM_IRQ_TYPE_LEVEL_EDGE);
-
-//	gpio_direction_output(e->gpio, 1);
 	return IRQ_HANDLED;
 }
+#endif
 
 static int egalax_firmware_version(struct i2c_client *client)
 {
@@ -251,9 +239,7 @@ static int egalax_wake_up_device(struct egalax *e)
 
 	/* controller should be waken up, return irq.  */
 	gpio_direction_input(gpio);
-
-	e->gpio = gpio;
-
+        gpio_free(gpio);
 	return VMM_OK;
 }
 
@@ -264,7 +250,6 @@ static int egalax_probe(struct i2c_client *client,
 	struct input_dev *input_dev;
 	int rc = VMM_EFAIL;
 
-	vmm_lcritical(NULL, "%s()\n", __func__);
 	e = vmm_zalloc(sizeof(*e));
 	if (NULL == e) {
 		vmm_lerror("egalax", "Failed to allocate memory\n");
@@ -281,7 +266,6 @@ static int egalax_probe(struct i2c_client *client,
 
 	e->input_dev = input_dev;
 	e->client = client;
-	e->done = 0;
 
 	i2c_set_clientdata(client, e);
 
@@ -298,7 +282,7 @@ static int egalax_probe(struct i2c_client *client,
 		goto fail;
 	}
 
-	input_dev->name = "EETI eGalax Touch Screen";
+	input_dev->name = "ts/egalax";
 	input_dev->phys = "I2C",
 	input_dev->id.bustype = BUS_I2C;
 
@@ -311,10 +295,6 @@ static int egalax_probe(struct i2c_client *client,
 	__set_bit(EV_KEY, input_dev->evbit);
 	__set_bit(BTN_TOUCH, input_dev->keybit);
 
-//	__set_bit(ABS_X, input_dev->absbit);
-//	__set_bit(ABS_Y, input_dev->absbit);
-//	__set_bit(ABS_PRESSURE, input_dev->absbit);
-
 	input_set_abs_params(input_dev, ABS_X, 0, EGALAX_MAX_X, 0, 0);
 	input_set_abs_params(input_dev, ABS_Y, 0, EGALAX_MAX_Y, 0, 0);
 	input_set_abs_params(input_dev, ABS_MT_POSITION_X,
@@ -325,8 +305,6 @@ static int egalax_probe(struct i2c_client *client,
 
 	input_set_drvdata(input_dev, e);
 
-	vmm_lnotice(NULL," client irq is %i\n", client->irq);
-
 	rc = input_register_device(e->input_dev);
 	if (rc) {
 		vmm_lerror("egalax", "Failed to register input device\n");
@@ -335,22 +313,18 @@ static int egalax_probe(struct i2c_client *client,
 
 
 	INIT_WORK(&e->job, egalax_i2c_job);
-//	INIT_MUTEX(&e->lock);
 	INIT_TIMER_EVENT(&e->timer, timer_event, e);
 
-	vmm_timer_event_start(&e->timer, 100000LL);
-
-//	vmm_printf("**** work = %p, egalax = %p, irq = %i\n", &e->job, e, client->irq);
-//	rc = vmm_host_irq_set_type(client->irq, VMM_IRQ_TYPE_LEVEL_LOW);
-//	if (rc) {
-//		vmm_lerror(NULL, "Failed to set IRQ type\n");
-//		goto fail;
-//	}
-//	rc = vmm_host_irq_register(client->irq, "eGalax", egalax_isr, e);
-//	if (rc) {
-//		vmm_lerror(NULL, "Failed to register IRQ %i\n", client->irq);
-//		goto fail;
-//	}
+#if 0
+	rc = vmm_host_irq_register(client->irq, "eGalax", egalax_isr, e);
+	if (rc) {
+		vmm_lerror(NULL, "Failed to register IRQ %i\n", client->irq);
+		goto fail;
+	}
+#else
+	//vmm_timer_event_start(&e->timer, 1000ULL * 1000ULL * 100ULL);
+	vmm_timer_event_start(&e->timer, 1000ULL);
+#endif
 
 	return VMM_OK;
 

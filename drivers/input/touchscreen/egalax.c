@@ -51,6 +51,7 @@
 #include <linux/delay.h>
 
 static const u64 _sched = 1000ULL * 1000ULL;// * 1000ULL * 1000ULL;
+static int egalax_firmware_version(struct i2c_client *client);
 
 /*
  * Mouse Mode: some panel may configure the controller to mouse mode,
@@ -95,6 +96,7 @@ struct egalax {
 	struct vmm_work job;
 	struct i2c_client *client;
 	struct input_dev *input_dev;
+	struct vmm_thread *thread;
 	struct vmm_timer_event timer;
 };
 
@@ -125,7 +127,7 @@ static void egalax_i2c_job(struct vmm_work *work)
 	// FIXME WHAAAAAT???? WHY DO I NEEEED THAT ?????
 //	buf += 2;
 
-#if defined(DEV_DEBUG) && 0
+#if defined(DEV_DEBUG) && 1
 	dev_dbg(&client->dev, "recv ret:%d", ret);
 	for (i = 0; i < MAX_I2C_DATA_LEN; i++) {
 		vmm_printf(" 0x%02x ", buf[i]);
@@ -160,13 +162,15 @@ static void egalax_i2c_job(struct vmm_work *work)
 	input_mt_slot(input_dev, id);
 	input_mt_report_slot_state(input_dev, MT_TOOL_FINGER, down);
 
+#if 1
 	dev_dbg(&client->dev, "%s id:%d x:%d y:%d z:%d\n",
 		down ? "down" : "up", id, x, y, z);
+#endif
 
 	if (down) {
 		input_report_abs(input_dev, ABS_MT_POSITION_X, x);
 		input_report_abs(input_dev, ABS_MT_POSITION_Y, y);
-		input_report_abs(input_dev, ABS_MT_PRESSURE, z);
+		//input_report_abs(input_dev, ABS_MT_PRESSURE, z);
 	}
 
 	input_mt_report_pointer_emulation(input_dev, true);
@@ -175,16 +179,30 @@ static void egalax_i2c_job(struct vmm_work *work)
 	tries = 0;
 	do {
 		ret = i2c_master_recv(client, buf, MAX_I2C_DATA_LEN);
-	} while ((ret > 0) && (tries++ < 10));
+		tries++;
+	} while ((ret > 0) && (buf[0] == REPORT_MODE_MTTOUCH));
+	vmm_printf("Read %i messages\n", tries);
 end:
 	/* FIXME This is terrible */
-	vmm_timer_event_start(&ts->timer, _sched);
+;//	vmm_timer_event_start(&ts->timer, _sched);
 }
 
 static void timer_event(struct vmm_timer_event *ev)
 {
 	struct egalax *const e = ev->priv;
 	vmm_workqueue_schedule_work(NULL, &e->job);
+}
+
+static int egalax_thread(void *data)
+{
+	struct egalax *const e = data;
+
+	while (1) {
+		egalax_i2c_job(&e->job);
+		vmm_msleep(10);
+	}
+
+	return 0;
 }
 
 #if 0
@@ -269,11 +287,11 @@ static int egalax_probe(struct i2c_client *client,
 
 	i2c_set_clientdata(client, e);
 
-	rc = egalax_wake_up_device(e);
-	if (rc) {
-		vmm_lerror("egalax", "Failed to wake up the controller\n");
-		goto fail;
-	}
+//	rc = egalax_wake_up_device(e);
+//	if (rc) {
+//		vmm_lerror("egalax", "Failed to wake up the controller\n");
+//		goto fail;
+//	}
 
 	rc = egalax_firmware_version(client);
 	if (rc < 0) {
@@ -311,9 +329,20 @@ static int egalax_probe(struct i2c_client *client,
 		goto fail_unregister;
 	}
 
+#if 1
+	e->thread = vmm_threads_create("egalax", egalax_thread, e,
+				       3,
+				       10000000000ULL);
+	if (!e->thread) {
+		vmm_lcritical("egalax", "Failed to create thread\n");
+		goto fail_unregister;
+	}
 
-	INIT_WORK(&e->job, egalax_i2c_job);
-	INIT_TIMER_EVENT(&e->timer, timer_event, e);
+	vmm_threads_start(e->thread);
+#endif
+
+//	INIT_WORK(&e->job, egalax_i2c_job);
+//	INIT_TIMER_EVENT(&e->timer, timer_event, e);
 
 #if 0
 	rc = vmm_host_irq_register(client->irq, "eGalax", egalax_isr, e);
@@ -323,7 +352,7 @@ static int egalax_probe(struct i2c_client *client,
 	}
 #else
 	//vmm_timer_event_start(&e->timer, 1000ULL * 1000ULL * 100ULL);
-	vmm_timer_event_start(&e->timer, 1000ULL);
+	//vmm_timer_event_start(&e->timer, 1000ULL);
 #endif
 
 	return VMM_OK;

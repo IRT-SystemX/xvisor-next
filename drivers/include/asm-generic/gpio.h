@@ -216,6 +216,8 @@ static inline void gpio_set_value_cansleep(unsigned gpio, int value)
 	__gpio_set_value(gpio, value);
 }
 
+int gpiolib_dump(struct seq_file *s);
+
 #endif /* !CONFIG_GPIOLIB */
 
 #endif /* _ASM_GENERIC_GPIO_H */

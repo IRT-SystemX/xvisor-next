@@ -68,6 +68,8 @@ u32 scu_get_core_count(void)
 
 bool scu_cpu_core_is_smp(u32 cpu)
 {
+	vmm_printf("%s: CPU%d, SCU_CONFIG:0x%lx\n", __func__, cpu, vmm_readl(scu_base + SCU_CONFIG));
+	
 	return (vmm_readl(scu_base + SCU_CONFIG) >> (4 + cpu)) & 0x01;
 }
 
@@ -108,6 +110,10 @@ void scu_enable(void)
 	 * initialised is visible to the other CPUs.
 	 */
 	vmm_flush_cache_all();
+
+	/* Invalidate SCU copy of TAG RAMs */
+	vmm_writel(0xffff, scu_base + SCU_INVALIDATE);
+
 }
 #endif
 

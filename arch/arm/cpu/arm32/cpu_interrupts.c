@@ -302,8 +302,8 @@ void do_data_abort(arch_regs_t *regs)
 		rc = cpu_mmu_get_reserved_page(dfar, &pg);
 		if (rc) {
 			vmm_panic("%s: cannot find reserved page\n"
-				  "%s: dfsr = 0x%08x, dfar = 0x%08x\n",
-				  __func__, __func__, dfsr, dfar);
+				  "%s: dfsr = 0x%08x, dfar = 0x%08x (pc = 0x%08x)\n",
+				  __func__, __func__, dfsr, dfar, regs->pc);
 		}
 		l1 = cpu_mmu_l1tbl_current();
 		if (!l1) {

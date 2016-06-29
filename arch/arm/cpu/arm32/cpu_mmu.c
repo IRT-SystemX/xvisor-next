@@ -1509,7 +1509,7 @@ int __cpuinit arch_cpu_aspace_memory_rwinit(virtual_addr_t tmp_va)
 			  TTBL_L2TBL_TTE_STEX_MASK)		|	\
 			 ((0x0 << TTBL_L2TBL_TTE_NG_SHIFT) &		\
 			    TTBL_L2TBL_TTE_NG_MASK)		|	\
-			 ((0x0 << TTBL_L2TBL_TTE_S_SHIFT) &		\
+			 ((0x1 << TTBL_L2TBL_TTE_S_SHIFT) &		\
 			    TTBL_L2TBL_TTE_S_MASK)		|	\
 			 ((TTBL_AP_SRW_U << (TTBL_L2TBL_TTE_AP2_SHIFT - 2)) & \
 			    TTBL_L2TBL_TTE_AP2_MASK)		|	\

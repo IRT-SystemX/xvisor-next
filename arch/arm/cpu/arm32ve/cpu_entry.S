@@ -199,6 +199,18 @@ _start_nextpc1:
 	str	r5, [r0]
 
 _start_mmu_init:
+	/* scu invalidate */
+	/* Invalidate SCU copy of TAG RAMs */
+
+  	mrc     p15, 4, r2, c15, c0, 0  /* Read periph base address */
+
+//	ldr     r1, [r2, #0x0]          /* Read the SCU Control Register */
+//  	orr     r1, r1, #0x1            /* Set bit 0 (The Enable bit) */
+//  	str     r1, [r2, #0x0]          /* Write back modifed value */
+  	
+	mov     r1, #0x0FFFF           	/* All ways */
+  	str     r1, [r2, #0x0C]         /* Write to SCU Invalidate All in Secure State */
+
 	/* Setup initial TTBL using C code and a temporary stack */
 	ldr	sp, __hvc_stack_end
 	sub	sp, sp, r6

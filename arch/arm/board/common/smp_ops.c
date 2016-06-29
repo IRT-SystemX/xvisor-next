@@ -333,6 +333,7 @@ int __init arch_smp_prepare_cpus(unsigned int max_cpus)
 
 int __init arch_smp_start_cpu(u32 cpu)
 {
+	DPRINTF("before start CPU%d\n", cpu);
 	/* Boot SMP callback */
 	if (smp_cpu_ops[cpu]->cpu_boot) {
 		return smp_cpu_ops[cpu]->cpu_boot(cpu);

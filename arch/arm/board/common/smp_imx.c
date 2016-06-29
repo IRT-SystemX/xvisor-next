@@ -85,7 +85,7 @@ static int __init smp_imx_init(struct vmm_devtree_node *node,
 	scu_enable();
 
 	/* Need to enable SCU standby for entering WAIT mode */
-	imx_scu_standby_enable();
+	//imx_scu_standby_enable();
 
 	/*
 	 * The diagnostic register holds the errata bits.  Mostly bootloader
@@ -96,6 +96,7 @@ static int __init smp_imx_init(struct vmm_devtree_node *node,
 	 * secondary cores when booting them.
 	 */
 	asm("mrc p15, 0, %0, c15, c0, 1" : "=r" (g_diag_reg) : : "cc");
+	vmm_printf("Diagnostic register: 0x%08x\n", g_diag_reg);
 	rc = vmm_host_va2pa((virtual_addr_t)&g_diag_reg, &g_diag_reg_paddr);
 	if (VMM_OK != rc) {
 		vmm_printf("Failed to get cpu jump physical address (0x%p)\n",
@@ -129,9 +130,25 @@ static int __init smp_imx_prepare(unsigned int cpu)
 
 static int __init smp_imx_boot(unsigned int cpu)
 {
+//	vmm_flush_cache_all();
 	/* Wake up the core through the SRC device */
 	scu_cpu_boot(cpu);
 	imx_enable_cpu(cpu, true);
+
+	/* Check SCU status */
+	if (!scu_cpu_core_is_smp(cpu)) {
+		vmm_printf("%s:%d, Failed SMP cpu%d\n", __func__, __LINE__ , cpu);
+		//return VMM_ENOSYS;
+	}
+	/* wait a while */
+	{int i; for (i=0; i<100000; i++){ asm volatile ("	nop");};}
+	/* Check SCU status */
+	if (!scu_cpu_core_is_smp(cpu)) {
+		vmm_printf("%s:%d, Failed SMP cpu%d\n", __func__, __LINE__ , cpu);
+		//return VMM_ENOSYS;
+	}
+	vmm_printf("actlr=0x%x\n" , read_actlr());
+
 
 	return VMM_OK;
 }

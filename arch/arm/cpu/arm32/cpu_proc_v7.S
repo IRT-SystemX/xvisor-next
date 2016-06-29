@@ -108,6 +108,12 @@ proc_mmu_switch:
  */
 	.globl proc_setup
 proc_setup:
+
+	adr	r12, __v7_setup_stack		@ the local stack
+	stmia	r12, {r0-r5, r7, r9, r11, lr}
+	bl      v7_flush_dcache_louis
+	ldmia	r12, {r0-r5, r7, r9, r11, lr}
+
 	mrc	p15, 0, r0, c0, c0, 0		@ read main ID register
 	and	r10, r0, #0xff000000		@ ARM?
 	teq	r10, #0x41000000
@@ -235,6 +241,10 @@ proc_specific_setup_done:
 v7_crval:
 	.word	0x0120c302 /* clear */
 	.word	0x00c01c7d /* mmuset */
+
+	.align	2
+__v7_setup_stack:
+	.space	4 * 11				@ 11 registers
 
 #ifdef CONFIG_SMP
 	/* 

@@ -29,6 +29,7 @@
 #include <libs/buddy.h>
 
 #undef DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #define DPRINTF(fmt, ...)		vmm_printf(fmt, ##__VA_ARGS__)
@@ -109,6 +110,7 @@ static struct buddy_area *buddy_hk_alloc(struct buddy_allocator *ba,
 	vmm_spin_lock_irqsave_lite(&ba->hk_free_lock, f);
 
 	if (!list_empty(&ba->hk_free_list)) {
+		DPRINTF("%s: ba=%p fl=%p p=%p n=%p\n", __func__, ba, &ba->hk_free_list, ba->hk_free_list.prev, ba->hk_free_list.next);
 		l = list_pop(&ba->hk_free_list);
 		a = list_entry(l, struct buddy_area, hk_head);
 		RB_CLEAR_NODE(&a->hk_rb);

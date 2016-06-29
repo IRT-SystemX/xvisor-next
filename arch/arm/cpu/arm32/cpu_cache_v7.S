@@ -91,6 +91,7 @@
 	/* invalidate the entire d-cache */
 	.globl invalidate_dcache
 invalidate_dcache:
+	dmb				/* ensure ordering with previous memory accesses */;\
 	ARM_ENTIRE_DCACHE_OP(c6) 	/* invalidate all */
 	isb
 	bx	lr
@@ -98,6 +99,7 @@ invalidate_dcache:
 	/* clean the entire data cache */	
 	.globl clean_dcache
 clean_dcache:
+	dmb				/* ensure ordering with previous memory accesses */;\
 	ARM_ENTIRE_DCACHE_OP(c10) 	/* clean all */
 	dsb
 	isb
@@ -106,6 +108,7 @@ clean_dcache:
 	/* clean & invalidate the entire data cache */	
 	.globl clean_invalidate_dcache
 clean_invalidate_dcache:
+	dmb				/* ensure ordering with previous memory accesses */;\
 	ARM_ENTIRE_DCACHE_OP(c14) 	/* clean and invalidate all */
 	dsb
 	isb
@@ -133,6 +136,9 @@ invalidate_dcache_mva_range:
 	sub	r3, r2, #1
 	tst	r0, r3
 	bic	r0, r0, r3
+#ifdef CONFIG_ARM_ERRATA_764369
+	dsb
+#endif
 	/* clean & invalidate D / U line */
 	mcrne	p15, 0, r0, c7, c14, 1
 	tst	r1, r3
@@ -180,6 +186,9 @@ clean_dcache_mva_range:
 	/* clean and invalidate by mva */
 	.globl clean_invalidate_dcache_mva
 clean_invalidate_dcache_mva:
+#ifdef CONFIG_ARM_ERRATA_764369
+	dsb
+#endif
 	mcr     p15, 0, r0, c7, c14, 1
 	dsb
 	isb
@@ -195,6 +204,9 @@ clean_invalidate_dcache_mva_range:
 	dcache_line_size r2, r3
 	sub	r3, r2, #1
 	bic	r0, r0, r3
+#ifdef CONFIG_ARM_ERRATA_764369
+	dsb
+#endif
 1:
 	mcr	p15, 0, r0, c7, c14, 1		/* clean & invalidate D / U line */
 	add	r0, r0, r2

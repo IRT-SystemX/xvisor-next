@@ -141,7 +141,7 @@ void __attribute__ ((section(".entry")))
 				    TTBL_L2TBL_TTE_STEX_MASK;
 			*l2_tte |= (0x0 << TTBL_L2TBL_TTE_NG_SHIFT) &
 				    TTBL_L2TBL_TTE_NG_MASK;
-			*l2_tte |= (0x0 << TTBL_L2TBL_TTE_S_SHIFT) &
+			*l2_tte |= (0x1 << TTBL_L2TBL_TTE_S_SHIFT) &
 				    TTBL_L2TBL_TTE_S_MASK;
 			if (writable) {
 				*l2_tte |=

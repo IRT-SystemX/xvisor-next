@@ -50,6 +50,7 @@
 #include <arch_cpu.h>
 #include <arch_board.h>
 
+#include <cpu_inline_asm.h>
 /* Optional includes */
 #include <drv/rtc.h>
 
@@ -556,6 +557,7 @@ static void __cpuinit init_secondary(void)
 	arch_smp_postboot();
 
 	vmm_printf("JVDG init_secondary end\n");
+	vmm_printf("actlr=0x%x\n" , read_actlr());
 
 	/* Start timer (Must be last step) */
 	vmm_timer_start();

@@ -291,7 +291,7 @@ static int vmm_printchar(struct vmm_chardev *cdev, char ch, bool block)
 		return VMM_EFAIL;
 	}
 
-#if 0
+#if 1
 	// bypass buffering : direct io
 	if (arch_smp_id() == 1) {
 		arch_defterm_early_putc((u8)ch);
